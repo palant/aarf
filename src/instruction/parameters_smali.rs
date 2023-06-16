@@ -1,4 +1,4 @@
-use super::{smali::read_label, CommandData, CommandParameters, Registers};
+use super::{smali::read_label, CommandData, CommandParameters, Register, Registers};
 use crate::error::ParseError;
 use crate::literal::Literal;
 use crate::r#type::{CallSignature, FieldSignature, MethodSignature, Type};
@@ -19,44 +19,44 @@ impl CommandParameters {
             | "long-to-float" | "long-to-double" | "float-to-int" | "float-to-long"
             | "float-to-double" | "double-to-int" | "double-to-long" | "double-to-float"
             | "int-to-byte" | "int-to-char" | "int-to-short" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(&input)?;
                 (input, Self::ResultRegister(result, register))
             }
             "move-result" | "move-result-wide" | "move-result-object" | "move-exception" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 (input, Self::Result(result))
             }
             "return" | "return-wide" | "return-object" | "monitor-enter" | "monitor-exit"
             | "throw" => {
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(input)?;
                 (input, Self::Register(register))
             }
             "const/4" | "const/16" | "const" | "const/high16" | "const-wide/16"
             | "const-wide/32" | "const-wide" | "const-wide/high16" | "const-string"
             | "const-string/jumbo" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, literal) = Literal::read(&input)?;
                 (input, Self::ResultLiteral(result, literal))
             }
             "const-class" | "new-instance" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, r#type) = Type::read(&input)?;
                 (input, Self::ResultType(result, r#type))
             }
             "check-cast" => {
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, r#type) = Type::read(&input)?;
                 (input, Self::RegisterType(register, r#type))
             }
             "instance-of" | "new-array" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
                 let (input, r#type) = Type::read(&input)?;
                 (input, Self::ResultRegisterType(result, register, r#type))
@@ -68,7 +68,7 @@ impl CommandParameters {
                 (input, Self::ResultRegistersType(None, registers, r#type))
             }
             "fill-array-data" | "packed-switch" | "sparse-switch" => {
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, label) = read_label(&input)?;
                 (
@@ -77,7 +77,7 @@ impl CommandParameters {
                 )
             }
             "if-eqz" | "if-nez" | "if-ltz" | "if-gez" | "if-gtz" | "if-lez" => {
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, label) = read_label(&input)?;
                 (input, Self::RegisterLabel(register, label))
@@ -94,20 +94,20 @@ impl CommandParameters {
             | "or-long" | "xor-long" | "shl-long" | "shr-long" | "ushr-long" | "add-float"
             | "sub-float" | "mul-float" | "div-float" | "rem-float" | "add-double"
             | "sub-double" | "mul-double" | "div-double" | "rem-double" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register1) = input.read_keyword()?;
+                let (input, register1) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
-                let (input, register2) = input.read_keyword()?;
+                let (input, register2) = Register::read(&input)?;
                 (
                     input,
                     Self::ResultRegisterRegister(result, register1, register2),
                 )
             }
             "if-eq" | "if-ne" | "if-lt" | "if-ge" | "if-gt" | "if-le" => {
-                let (input, register1) = input.read_keyword()?;
+                let (input, register1) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register2) = input.read_keyword()?;
+                let (input, register2) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
                 let (input, label) = read_label(&input)?;
                 (
@@ -117,11 +117,11 @@ impl CommandParameters {
             }
             "aput" | "aput-wide" | "aput-object" | "aput-boolean" | "aput-byte" | "aput-char"
             | "aput-short" => {
-                let (input, register1) = input.read_keyword()?;
+                let (input, register1) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register2) = input.read_keyword()?;
+                let (input, register2) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
-                let (input, register3) = input.read_keyword()?;
+                let (input, register3) = Register::read(&input)?;
                 (
                     input,
                     Self::RegisterRegisterRegister(register1, register2, register3),
@@ -129,18 +129,18 @@ impl CommandParameters {
             }
             "iget" | "iget-wide" | "iget-object" | "iget-boolean" | "iget-byte" | "iget-char"
             | "iget-short" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
                 let (input, field) = FieldSignature::read(&input)?;
                 (input, Self::ResultRegisterField(result, register, field))
             }
             "iput" | "iput-wide" | "iput-object" | "iput-boolean" | "iput-byte" | "iput-char"
             | "iput-short" => {
-                let (input, register1) = input.read_keyword()?;
+                let (input, register1) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register2) = input.read_keyword()?;
+                let (input, register2) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
                 let (input, field) = FieldSignature::read(&input)?;
                 (
@@ -150,14 +150,14 @@ impl CommandParameters {
             }
             "sget" | "sget-wide" | "sget-object" | "sget-boolean" | "sget-byte" | "sget-char"
             | "sget-short" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, field) = FieldSignature::read(&input)?;
                 (input, Self::ResultField(result, field))
             }
             "sput" | "sput-wide" | "sput-object" | "sput-boolean" | "sput-byte" | "sput-char"
             | "sput-short" => {
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, field) = FieldSignature::read(&input)?;
                 (input, Self::RegisterField(register, field))
@@ -185,9 +185,9 @@ impl CommandParameters {
             | "shr-long/2addr" | "ushr-long/2addr" | "add-float/2addr" | "sub-float/2addr"
             | "mul-float/2addr" | "div-float/2addr" | "rem-float/2addr" | "add-double/2addr"
             | "sub-double/2addr" | "mul-double/2addr" | "div-double/2addr" | "rem-double/2addr" => {
-                let (input, register1) = input.read_keyword()?;
+                let (input, register1) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register2) = input.read_keyword()?;
+                let (input, register2) = Register::read(&input)?;
                 (input, Self::RegisterRegister(register1, register2))
             }
             "add-int/lit16" | "rsub-int" | "mul-int/lit16" | "div-int/lit16" | "rem-int/lit16"
@@ -195,9 +195,9 @@ impl CommandParameters {
             | "rsub-int/lit8" | "mul-int/lit8" | "div-int/lit8" | "rem-int/lit8"
             | "and-int/lit8" | "or-int/lit8" | "xor-int/lit8" | "shl-int/lit8" | "shr-int/lit8"
             | "ushr-int/lit8" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
-                let (input, register) = input.read_keyword()?;
+                let (input, register) = Register::read(&input)?;
                 let input = input.expect_char(',')?;
                 let (input, literal) = Literal::read(&input)?;
                 (
@@ -218,7 +218,7 @@ impl CommandParameters {
             }
             // TODO: invoke-custom and invoke-custom/range
             "const-method-handle" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, invoke_type) = input.read_keyword()?;
                 let input = input.expect_char('@')?;
@@ -226,7 +226,7 @@ impl CommandParameters {
                 (input, Self::ResultMethodHandle(result, invoke_type, method))
             }
             "const-method-type" => {
-                let (input, result) = input.read_keyword()?;
+                let (input, result) = Register::read(input)?;
                 let input = input.expect_char(',')?;
                 let (input, call) = CallSignature::read(&input)?;
                 (input, Self::ResultCall(result, call))

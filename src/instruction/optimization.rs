@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use super::{CommandData, CommandParameters, Instruction};
+use super::{CommandData, CommandParameters, Instruction, Register};
 
 impl Instruction {
-    pub fn get_moved_result(&self) -> Option<String> {
+    pub fn get_moved_result(&self) -> Option<Register> {
         if let Self::Command {
             command,
             parameters: CommandParameters::Result(result),
@@ -16,7 +16,7 @@ impl Instruction {
         None
     }
 
-    pub fn inline_result(&mut self, result: String) -> bool {
+    pub fn inline_result(&mut self, result: Register) -> bool {
         if let Self::Command { parameters, .. } = self {
             parameters.inline_result(result)
         } else {

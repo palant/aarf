@@ -115,7 +115,7 @@ mod tests {
     use super::*;
     use crate::annotation::{AnnotationParameter, AnnotationParameterValue, AnnotationVisibility};
     use crate::error::ParseErrorDisplayed;
-    use crate::instruction::{CommandParameters, Registers};
+    use crate::instruction::{CommandParameters, RawRegister, Register, Registers};
     use crate::literal::Literal;
     use crate::r#type::{CallSignature, MethodSignature, Type};
 
@@ -202,7 +202,7 @@ mod tests {
                         command: "invoke-direct".to_string(),
                         parameters: CommandParameters::ResultRegistersMethod(
                             None,
-                            Registers::List(vec!["p0".to_string()]),
+                            Registers::List(vec![Register::Raw(RawRegister::Parameter(0))]),
                             MethodSignature {
                                 object_type: Type::Object("java.lang.Object".to_string()),
                                 method_name: "<init>".to_string(),

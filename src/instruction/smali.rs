@@ -168,7 +168,7 @@ impl Instruction {
 mod tests {
     use super::*;
     use crate::error::ParseErrorDisplayed;
-    use crate::instruction::Registers;
+    use crate::instruction::{RawRegister, Register, Registers};
     use crate::r#type::{CallSignature, MethodSignature};
 
     fn tokenizer(data: &str) -> Tokenizer {
@@ -213,7 +213,11 @@ mod tests {
                 command: "invoke-polymorphic".to_string(),
                 parameters: CommandParameters::ResultRegistersMethodCall(
                     None,
-                    Registers::List(vec!["p1".to_string(), "v0".to_string(), "v1".to_string()]),
+                    Registers::List(vec![
+                        Register::Raw(RawRegister::Parameter(1)),
+                        Register::Raw(RawRegister::Local(0)),
+                        Register::Raw(RawRegister::Local(1)),
+                    ]),
                     MethodSignature {
                         object_type: Type::Object("java.lang.invoke.MethodHandle".to_string()),
                         method_name: "invoke".to_string(),
@@ -239,7 +243,10 @@ mod tests {
                 command: "invoke-polymorphic/range".to_string(),
                 parameters: CommandParameters::ResultRegistersMethodCall(
                     None,
-                    Registers::Range("v0".to_string(), "v2".to_string()),
+                    Registers::Range(
+                        Register::Raw(RawRegister::Local(0)),
+                        Register::Raw(RawRegister::Local(2)),
+                    ),
                     MethodSignature {
                         object_type: Type::Object("java.lang.invoke.MethodHandle".to_string()),
                         method_name: "invoke".to_string(),
@@ -264,7 +271,7 @@ mod tests {
             Instruction::Command {
                 command: "const-method-handle".to_string(),
                 parameters: CommandParameters::ResultMethodHandle(
-                    "v0".to_string(),
+                    Register::Raw(RawRegister::Local(0)),
                     "invoke-static".to_string(),
                     MethodSignature {
                         object_type: Type::Object("java.lang.Integer".to_string()),
@@ -284,7 +291,7 @@ mod tests {
             Instruction::Command {
                 command: "const-method-type".to_string(),
                 parameters: CommandParameters::ResultCall(
-                    "v0".to_string(),
+                    Register::Raw(RawRegister::Local(0)),
                     CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Int

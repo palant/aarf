@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use super::{CommandData, CommandParameters};
+use super::{CommandData, CommandParameters, Register};
 
 impl CommandParameters {
-    pub fn inline_result(&mut self, r: String) -> bool {
+    pub fn inline_result(&mut self, r: Register) -> bool {
         match self {
             Self::ResultRegistersMethod(result, ..)
             | Self::ResultRegistersMethodCall(result, ..)

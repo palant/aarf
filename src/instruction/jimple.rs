@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use super::{CommandData, CommandParameters, Instruction, Registers};
+use super::{CommandData, CommandParameters, Instruction, Register, Registers};
 use crate::r#type::MethodSignature;
 
 fn if_op(command: &str) -> &str {
@@ -56,7 +56,7 @@ fn bin_op(command: &str) -> &str {
 
 fn stringify_call(
     command: &str,
-    result: &Option<String>,
+    result: &Option<Register>,
     method: &MethodSignature,
     registers: &Registers,
 ) -> String {
