@@ -90,11 +90,11 @@ fn main() {
                 .arg(output_dir)
                 .arg(apk_path)
                 .spawn()
-                .expect("Failed running apktool")
+                .expect("Failed starting apktool")
                 .wait()
                 .expect("Failed waiting for apktool to finish");
             if !status.success() {
-                eprintln!("apktool exited with error code.");
+                eprintln!("apktool exited with an error code.");
                 std::process::exit(1);
             }
 
