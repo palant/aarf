@@ -1,4 +1,4 @@
-use super::{RawRegister, Register, Registers};
+use super::{Register, Registers};
 use crate::error::ParseError;
 use crate::tokenizer::Tokenizer;
 
@@ -6,10 +6,10 @@ impl Register {
     pub fn read(input: &Tokenizer) -> Result<(Tokenizer, Self), ParseError> {
         if let Ok(input) = input.expect_char('p') {
             let (input, index) = input.read_number()?;
-            Ok((input, Self::Raw(RawRegister::Parameter(index as usize))))
+            Ok((input, Self::Parameter(index as usize)))
         } else if let Ok(input) = input.expect_char('v') {
             let (input, index) = input.read_number()?;
-            Ok((input, Self::Raw(RawRegister::Local(index as usize))))
+            Ok((input, Self::Local(index as usize)))
         } else {
             Err(input.unexpected("a register".into()))
         }

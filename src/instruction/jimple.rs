@@ -8,6 +8,7 @@ fn stringify_parameter(parameter: &CommandParameter) -> String {
         | CommandParameter::DefaultEmptyResult(Some(register))
         | CommandParameter::Register(register) => register.to_string(),
         CommandParameter::DefaultEmptyResult(None) => String::new(),
+        CommandParameter::Variable(variable) => variable.to_string(),
         CommandParameter::Registers(registers) => registers.to_list(false).1,
         CommandParameter::Literal(literal) => literal.to_string(),
         CommandParameter::Label(label) => label.clone(),

@@ -291,34 +291,33 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
 );
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum RawRegister {
+pub enum Register {
     Parameter(usize),
     Local(usize),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum VariableRegister {
-    This,
-    Parameter(usize, Type),
-    Local(usize, Type),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Register {
-    Raw(RawRegister),
-    Variable(VariableRegister),
-    Literal(Literal),
 }
 
 impl Display for Register {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Self::Raw(RawRegister::Parameter(index)) => write!(f, "p{index}"),
-            Self::Raw(RawRegister::Local(index)) => write!(f, "v{index}"),
-            Self::Variable(VariableRegister::This) => write!(f, "@this"),
-            Self::Variable(VariableRegister::Parameter(index, _)) => write!(f, "@p{index}"),
-            Self::Variable(VariableRegister::Local(index, _)) => write!(f, "$v{index}"),
-            Self::Literal(literal) => write!(f, "{literal}"),
+            Self::Parameter(index) => write!(f, "p{index}"),
+            Self::Local(index) => write!(f, "v{index}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Variable {
+    This,
+    Parameter(usize, Type),
+    Local(usize, Type),
+}
+
+impl Display for Variable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Self::This => write!(f, "@this"),
+            Self::Parameter(index, _) => write!(f, "@p{index}"),
+            Self::Local(index, _) => write!(f, "$v{index}"),
         }
     }
 }
@@ -331,26 +330,14 @@ pub enum Registers {
 
 impl Registers {
     fn resolve_range(from: &Register, to: &Register) -> Option<Vec<Register>> {
-        if let (
-            Register::Raw(RawRegister::Parameter(from_index)),
-            Register::Raw(RawRegister::Parameter(to_index)),
-        ) = (from, to)
-        {
+        if let (Register::Parameter(from_index), Register::Parameter(to_index)) = (from, to) {
             Some(
                 (*from_index..to_index + 1)
-                    .map(|index| Register::Raw(RawRegister::Parameter(index)))
+                    .map(Register::Parameter)
                     .collect(),
             )
-        } else if let (
-            Register::Raw(RawRegister::Local(from_index)),
-            Register::Raw(RawRegister::Local(to_index)),
-        ) = (from, to)
-        {
-            Some(
-                (*from_index..to_index + 1)
-                    .map(|index| Register::Raw(RawRegister::Local(index)))
-                    .collect(),
-            )
+        } else if let (Register::Local(from_index), Register::Local(to_index)) = (from, to) {
+            Some((*from_index..to_index + 1).map(Register::Local).collect())
         } else {
             eprintln!("Warning: Invalid parameter range: {from} .. {to}");
             None
@@ -395,6 +382,7 @@ pub enum CommandParameter {
     Result(Register),
     DefaultEmptyResult(Option<Register>),
     Register(Register),
+    Variable(Variable),
     Registers(Registers),
     Literal(Literal),
     Label(String),

@@ -186,7 +186,7 @@ impl Instruction {
 mod tests {
     use super::*;
     use crate::error::ParseErrorDisplayed;
-    use crate::instruction::{RawRegister, Register, Registers};
+    use crate::instruction::{Register, Registers};
     use crate::r#type::{CallSignature, MethodSignature};
 
     fn tokenizer(data: &str) -> Tokenizer {
@@ -232,9 +232,9 @@ mod tests {
                 parameters: vec![
                     CommandParameter::DefaultEmptyResult(None),
                     CommandParameter::Registers(Registers::List(vec![
-                        Register::Raw(RawRegister::Parameter(1)),
-                        Register::Raw(RawRegister::Local(0)),
-                        Register::Raw(RawRegister::Local(1)),
+                        Register::Parameter(1),
+                        Register::Local(0),
+                        Register::Local(1),
                     ])),
                     CommandParameter::Method(MethodSignature {
                         object_type: Type::Object("java.lang.invoke.MethodHandle".to_string()),
@@ -262,8 +262,8 @@ mod tests {
                 parameters: vec![
                     CommandParameter::DefaultEmptyResult(None),
                     CommandParameter::Registers(Registers::Range(
-                        Register::Raw(RawRegister::Local(0)),
-                        Register::Raw(RawRegister::Local(2)),
+                        Register::Local(0),
+                        Register::Local(2),
                     )),
                     CommandParameter::Method(MethodSignature {
                         object_type: Type::Object("java.lang.invoke.MethodHandle".to_string()),
@@ -289,7 +289,7 @@ mod tests {
             Instruction::Command {
                 command: "const-method-handle".to_string(),
                 parameters: vec![
-                    CommandParameter::Result(Register::Raw(RawRegister::Local(0))),
+                    CommandParameter::Result(Register::Local(0)),
                     CommandParameter::MethodHandle(
                         "invoke-static".to_string(),
                         MethodSignature {
@@ -311,7 +311,7 @@ mod tests {
             Instruction::Command {
                 command: "const-method-type".to_string(),
                 parameters: vec![
-                    CommandParameter::Result(Register::Raw(RawRegister::Local(0))),
+                    CommandParameter::Result(Register::Local(0)),
                     CommandParameter::Call(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Int
