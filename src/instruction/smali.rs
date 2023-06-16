@@ -1,4 +1,4 @@
-use super::{CommandData, CommandParameters, Instruction};
+use super::{CommandData, CommandParameter, Instruction, ParameterKind, DEFS};
 use crate::error::ParseError;
 use crate::literal::Literal;
 use crate::r#type::Type;
@@ -147,9 +147,27 @@ impl Instruction {
             (input, Self::Label(label))
         } else {
             let start = input;
-            let (input, command) = input.read_keyword()?;
+            let (mut input, command) = input.read_keyword()?;
             let command = command.to_ascii_lowercase();
-            let (input, parameters) = CommandParameters::read(&input, &command, start)?;
+            let mut parameters = Vec::new();
+
+            if let Some(defs) = DEFS.get(&command) {
+                let mut first = true;
+                for kind in defs.parameters {
+                    if !first {
+                        input = input.expect_char(',')?;
+                    } else if *kind != ParameterKind::DefaultEmptyResult {
+                        first = false;
+                    }
+
+                    let parameter;
+                    (input, parameter) = CommandParameter::read(&input, kind)?;
+                    parameters.push(parameter);
+                }
+            } else {
+                return Err(start.unexpected("a supported command".into()));
+            }
+
             (
                 input,
                 Self::Command {
@@ -199,7 +217,7 @@ mod tests {
             instruction,
             Instruction::Command {
                 command: "nop".to_string(),
-                parameters: CommandParameters::None,
+                parameters: Vec::new(),
             },
         );
 
@@ -211,14 +229,14 @@ mod tests {
             instruction,
             Instruction::Command {
                 command: "invoke-polymorphic".to_string(),
-                parameters: CommandParameters::ResultRegistersMethodCall(
-                    None,
-                    Registers::List(vec![
+                parameters: vec![
+                    CommandParameter::DefaultEmptyResult(None),
+                    CommandParameter::Registers(Registers::List(vec![
                         Register::Raw(RawRegister::Parameter(1)),
                         Register::Raw(RawRegister::Local(0)),
                         Register::Raw(RawRegister::Local(1)),
-                    ]),
-                    MethodSignature {
+                    ])),
+                    CommandParameter::Method(MethodSignature {
                         object_type: Type::Object("java.lang.invoke.MethodHandle".to_string()),
                         method_name: "invoke".to_string(),
                         call_signature: CallSignature {
@@ -227,12 +245,12 @@ mod tests {
                             )))],
                             return_type: Type::Object("java.lang.Object".to_string())
                         },
-                    },
-                    CallSignature {
+                    }),
+                    CommandParameter::Call(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Void,
-                    }
-                ),
+                    }),
+                ],
             }
         );
 
@@ -241,13 +259,13 @@ mod tests {
             instruction,
             Instruction::Command {
                 command: "invoke-polymorphic/range".to_string(),
-                parameters: CommandParameters::ResultRegistersMethodCall(
-                    None,
-                    Registers::Range(
+                parameters: vec![
+                    CommandParameter::DefaultEmptyResult(None),
+                    CommandParameter::Registers(Registers::Range(
                         Register::Raw(RawRegister::Local(0)),
                         Register::Raw(RawRegister::Local(2)),
-                    ),
-                    MethodSignature {
+                    )),
+                    CommandParameter::Method(MethodSignature {
                         object_type: Type::Object("java.lang.invoke.MethodHandle".to_string()),
                         method_name: "invoke".to_string(),
                         call_signature: CallSignature {
@@ -256,12 +274,12 @@ mod tests {
                             )))],
                             return_type: Type::Object("java.lang.Object".to_string())
                         },
-                    },
-                    CallSignature {
+                    }),
+                    CommandParameter::Call(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Void,
-                    }
-                ),
+                    })
+                ],
             }
         );
 
@@ -270,18 +288,20 @@ mod tests {
             instruction,
             Instruction::Command {
                 command: "const-method-handle".to_string(),
-                parameters: CommandParameters::ResultMethodHandle(
-                    Register::Raw(RawRegister::Local(0)),
-                    "invoke-static".to_string(),
-                    MethodSignature {
-                        object_type: Type::Object("java.lang.Integer".to_string()),
-                        method_name: "toString".to_string(),
-                        call_signature: CallSignature {
-                            parameter_types: vec![Type::Int],
-                            return_type: Type::Object("java.lang.String".to_string())
+                parameters: vec![
+                    CommandParameter::Result(Register::Raw(RawRegister::Local(0))),
+                    CommandParameter::MethodHandle(
+                        "invoke-static".to_string(),
+                        MethodSignature {
+                            object_type: Type::Object("java.lang.Integer".to_string()),
+                            method_name: "toString".to_string(),
+                            call_signature: CallSignature {
+                                parameter_types: vec![Type::Int],
+                                return_type: Type::Object("java.lang.String".to_string())
+                            },
                         },
-                    },
-                ),
+                    ),
+                ],
             }
         );
 
@@ -290,13 +310,13 @@ mod tests {
             instruction,
             Instruction::Command {
                 command: "const-method-type".to_string(),
-                parameters: CommandParameters::ResultCall(
-                    Register::Raw(RawRegister::Local(0)),
-                    CallSignature {
+                parameters: vec![
+                    CommandParameter::Result(Register::Raw(RawRegister::Local(0))),
+                    CommandParameter::Call(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Int
-                    }
-                ),
+                    }),
+                ],
             }
         );
 

@@ -1,32 +1,49 @@
 use std::collections::HashMap;
 
-use super::{CommandData, CommandParameters, Instruction, Register};
+use super::{CommandData, CommandParameter, Instruction, Register};
 
 impl Instruction {
     pub fn get_moved_result(&self) -> Option<Register> {
         if let Self::Command {
             command,
-            parameters: CommandParameters::Result(result),
+            parameters,
         } = self
         {
             if command.starts_with("move-result") {
-                return Some(result.clone());
+                if let Some(CommandParameter::Result(result)) = parameters.get(0) {
+                    return Some(result.clone());
+                }
             }
         }
         None
     }
 
-    pub fn inline_result(&mut self, result: Register) -> bool {
+    pub fn inline_result(&mut self, r: Register) -> bool {
         if let Self::Command { parameters, .. } = self {
-            parameters.inline_result(result)
-        } else {
-            false
+            if let Some(CommandParameter::DefaultEmptyResult(result)) = parameters.get_mut(0) {
+                if result.is_none() {
+                    *result = Some(r);
+                    return true;
+                }
+            }
         }
+
+        false
     }
 
-    pub fn resolve_data(&mut self, data: &HashMap<String, CommandData>) {
+    pub fn resolve_data(&mut self, d: &HashMap<String, CommandData>) {
         if let Self::Command { parameters, .. } = self {
-            parameters.resolve_data(data);
+            for parameter in parameters.iter_mut() {
+                if let CommandParameter::Data(data) = parameter {
+                    if let CommandData::Label(label) = data {
+                        if let Some(d) = d.get(label) {
+                            *data = d.clone();
+                        } else {
+                            eprintln!("Warning: Failed resolving command data {label}");
+                        }
+                    }
+                }
+            }
         }
     }
 }

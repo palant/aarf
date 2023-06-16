@@ -1,89 +1,45 @@
 use std::io::Write;
 
-use super::{CommandData, CommandParameters, Instruction, Register, Registers};
-use crate::r#type::MethodSignature;
+use super::{CommandData, CommandParameter, Instruction, DEFS};
 
-fn if_op(command: &str) -> &str {
-    let command = command.trim_end_matches('z');
-    match command {
-        "if-eq" => "==",
-        "if-ne" => "!=",
-        "if-lt" => "<",
-        "if-gt" => ">",
-        "if-le" => "<=",
-        "if-ge" => ">=",
-        _ => "",
-    }
-}
-
-fn unary_op(command: &str) -> &str {
-    let command = if let Some((_, t)) = command.split_once("-to-") {
-        t
-    } else {
-        command.split('-').next().unwrap_or(command)
-    };
-    match command {
-        "neg" => "-",
-        "not" => "~",
-        "byte" => "(byte) ",
-        "char" => "(char) ",
-        "short" => "(short) ",
-        "int" => "(int) ",
-        "long" => "(long) ",
-        "float" => "(float) ",
-        "double" => "(double) ",
-        _ => "",
-    }
-}
-
-fn bin_op(command: &str) -> &str {
-    let command = command.split('-').next().unwrap_or(command);
-    match command {
-        "add" => "+",
-        "sub" | "rsub" => "-",
-        "mul" => "*",
-        "div" => "/",
-        "rem" => "%",
-        "and" => "&",
-        "or" => "|",
-        "xor" => "^",
-        "shl" => "<<",
-        "shr" => ">>",
-        "ushr" => ">>>",
-        _ => "",
-    }
-}
-
-fn stringify_call(
-    command: &str,
-    result: &Option<Register>,
-    method: &MethodSignature,
-    registers: &Registers,
-) -> String {
-    let is_static = command.starts_with("invoke-static");
-    let (this, args) = registers.to_list(!is_static);
-    let is_static = command.starts_with("invoke-static");
-
-    let prefix = if let Some(result) = result {
-        format!("{result} = ")
-    } else {
-        String::new()
-    };
-
-    if let Some(this) = this {
-        format!(
-            "{prefix}{} {this}.<{method}>({args})",
-            command.strip_suffix("/range").unwrap_or(command),
-        )
-    } else {
-        if !is_static {
-            eprintln!("Warning: non-static call <{method}> has zero parameters");
+fn stringify_parameter(parameter: &CommandParameter) -> String {
+    match parameter {
+        CommandParameter::Result(register)
+        | CommandParameter::DefaultEmptyResult(Some(register))
+        | CommandParameter::Register(register) => register.to_string(),
+        CommandParameter::DefaultEmptyResult(None) => String::new(),
+        CommandParameter::Registers(registers) => registers.to_list(false).1,
+        CommandParameter::Literal(literal) => literal.to_string(),
+        CommandParameter::Label(label) => label.clone(),
+        CommandParameter::Type(r#type) => r#type.to_string(),
+        CommandParameter::Field(field) => field.to_string(),
+        CommandParameter::Method(method) => method.to_string(),
+        CommandParameter::MethodHandle(invoke_type, method) => format!("{invoke_type}@{method}"),
+        CommandParameter::Call(call) => call.to_string(),
+        CommandParameter::Data(CommandData::Label(label)) => {
+            eprintln!("Warning: Writing out unresolved command data label {label}");
+            "??<label>??".to_string()
         }
-
-        format!(
-            "{prefix}{} <{method}>({args})",
-            command.strip_suffix("/range").unwrap_or(command),
-        )
+        CommandParameter::Data(CommandData::PackedSwitch(first_key, targets)) => targets
+            .iter()
+            .enumerate()
+            .map(|(index, target)| {
+                let key = first_key + (index as i64);
+                format!(
+                    "            case {}{:#x}: goto {target};\n",
+                    if key.is_negative() { "-" } else { "" },
+                    key.abs_diff(0)
+                )
+            })
+            .collect(),
+        CommandParameter::Data(CommandData::SparseSwitch(targets)) => targets
+            .iter()
+            .map(|(value, target)| format!("            case {value}: goto {target};\n"))
+            .collect(),
+        CommandParameter::Data(CommandData::Array(values)) => values
+            .iter()
+            .map(|value| format!("            {value},\n"))
+            .collect(),
     }
 }
 
@@ -101,208 +57,41 @@ impl Instruction {
             Self::Command {
                 command,
                 parameters,
-            } => match parameters {
-                CommandParameters::None => {
-                    writeln!(
-                        output,
-                        "        {};",
-                        if command == "return-void" {
-                            "return"
-                        } else {
-                            command
-                        }
+            } => {
+                let defs = DEFS.get(command).ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Attempt to write unknown command to Jimple",
                     )
+                })?;
+
+                write!(output, "        ")?;
+                if let Some(CommandParameter::Result(result))
+                | Some(CommandParameter::DefaultEmptyResult(Some(result))) = parameters.get(0)
+                {
+                    write!(output, "{} = ", result)?;
                 }
-                CommandParameters::Result(result) => {
-                    writeln!(output, "        {result} = {command};")
-                }
-                CommandParameters::Register(register) => {
-                    writeln!(
-                        output,
-                        "        {} {register};",
-                        if command.starts_with("return-") {
-                            "return"
-                        } else {
-                            command
-                        }
-                    )
-                }
-                CommandParameters::ResultRegister(result, register) => {
-                    if command.starts_with("move") {
-                        writeln!(output, "        {result} = {register};")
-                    } else {
-                        let op = unary_op(command);
-                        if !op.is_empty() {
-                            writeln!(output, "        {result} = {op}{register};")
-                        } else {
-                            if command != "array-length" {
-                                eprintln!("Warning: Unrecognized unary operation {command}");
-                            }
-                            writeln!(output, "        {result} = {command} {register};")
+
+                let mut result = defs.format.to_string();
+                for (index, parameter) in parameters.iter().enumerate() {
+                    let placeholder = format!("{{{index}}}");
+                    if result.contains(&placeholder) {
+                        result = result.replace(&placeholder, &stringify_parameter(parameter));
+                    }
+
+                    if let CommandParameter::Registers(registers) = parameter {
+                        let placeholder1 = format!("{{{index}.this}}");
+                        let placeholder2 = format!("{{{index}.args}}");
+                        if result.contains(&placeholder1) || result.contains(&placeholder2) {
+                            let (this, args) = registers.to_list(true);
+                            let this = this.unwrap_or_else(|| "???".to_string());
+                            result = result.replace(&placeholder1, &this);
+                            result = result.replace(&placeholder2, &args);
                         }
                     }
                 }
-                CommandParameters::RegisterRegister(register1, register2) => {
-                    let op = bin_op(command);
-                    if !op.is_empty() {
-                        writeln!(output, "        {register1} {op}= {register2};")
-                    } else {
-                        eprintln!("Warning: Unrecognized binary operation {command}");
-                        writeln!(output, "        {command} {register1}, {register2};")
-                    }
-                }
-                CommandParameters::ResultRegisterRegister(result, register1, register2) => {
-                    if command.starts_with("aget") {
-                        writeln!(output, "        {result} = {register1}[{register2}];")
-                    } else {
-                        let op = bin_op(command);
-                        if !op.is_empty() {
-                            writeln!(output, "        {result} = {register1} {op} {register2};")
-                        } else {
-                            writeln!(
-                                output,
-                                "        {result} = {command} {register1}, {register2};"
-                            )
-                        }
-                    }
-                }
-                CommandParameters::RegisterRegisterRegister(register1, register2, register3) => {
-                    writeln!(output, "        {register2}[{register3}] = {register1};")
-                }
-                CommandParameters::ResultLiteral(result, literal) => {
-                    writeln!(output, "        {result} = {literal};")
-                }
-                CommandParameters::ResultRegisterLiteral(result, register, literal) => {
-                    let op = bin_op(command);
-                    if !op.is_empty() {
-                        if command.starts_with("rsub-") {
-                            writeln!(output, "        {result} = {literal} {op} {register};")
-                        } else {
-                            writeln!(output, "        {result} = {register} {op} {literal};")
-                        }
-                    } else {
-                        eprintln!("Warning: Unrecognized binary operation {command}");
-                        writeln!(
-                            output,
-                            "        {result} = {command} {register}, {literal};"
-                        )
-                    }
-                }
-                CommandParameters::ResultType(result, r#type) => {
-                    if command == "new-instance" {
-                        writeln!(output, "        {result} = new {type};")
-                    } else {
-                        writeln!(output, "        {result} = class {type};")
-                    }
-                }
-                CommandParameters::RegisterType(register, r#type) => {
-                    writeln!(output, "        {command} {register}, {type};")
-                }
-                CommandParameters::ResultRegisterType(result, register, r#type) => {
-                    writeln!(output, "        {result} = {command} {register}, {type};")
-                }
-                CommandParameters::ResultRegistersType(result, registers, _) => {
-                    if let Some(result) = result {
-                        writeln!(
-                            output,
-                            "        {result} = {{{}}};",
-                            registers.to_list(false).1
-                        )
-                    } else {
-                        writeln!(output, "        {{{}}};", registers.to_list(false).1)
-                    }
-                }
-                CommandParameters::ResultField(result, field) => {
-                    writeln!(output, "        {result} = <{field}>;")
-                }
-                CommandParameters::RegisterField(register, field) => {
-                    writeln!(output, "        <{field}> = {register};")
-                }
-                CommandParameters::ResultRegisterField(result, register, field) => {
-                    writeln!(output, "        {result} = {register}.<{field}>;")
-                }
-                CommandParameters::RegisterRegisterField(register1, register2, field) => {
-                    writeln!(output, "        {register2}.<{field}> = {register1};")
-                }
-                CommandParameters::ResultRegistersMethod(result, registers, method) => {
-                    writeln!(
-                        output,
-                        "        {};",
-                        stringify_call(command, result, method, registers)
-                    )
-                }
-                CommandParameters::ResultRegistersMethodCall(result, registers, method, call) => {
-                    writeln!(
-                        output,
-                        "        {}, <{call}>;",
-                        stringify_call(command, result, method, registers)
-                    )
-                }
-                CommandParameters::Label(label) => writeln!(output, "        goto {label};"),
-                CommandParameters::RegisterLabel(register, label) => {
-                    let op = if_op(command);
-                    if !op.is_empty() {
-                        writeln!(output, "        if {register} {op} 0 goto {label};")
-                    } else {
-                        eprintln!("Warning: Unrecognized conditional operation {command}");
-                        writeln!(output, "        {command} {register} goto {label};")
-                    }
-                }
-                CommandParameters::RegisterData(register, data) => match data {
-                    CommandData::Label(label) => {
-                        writeln!(output, "        {command} {register}, {label};")
-                    }
-                    CommandData::PackedSwitch(first_key, targets) => {
-                        writeln!(output, "        switch({register})")?;
-                        writeln!(output, "        {{")?;
-                        for (index, target) in targets.iter().enumerate() {
-                            let key = first_key + (index as i64);
-                            writeln!(
-                                output,
-                                "            case {}{:#x}: goto {target};",
-                                if key.is_negative() { "-" } else { "" },
-                                key.abs_diff(0)
-                            )?;
-                        }
-                        writeln!(output, "        }};")
-                    }
-                    CommandData::SparseSwitch(targets) => {
-                        writeln!(output, "        switch({register})")?;
-                        writeln!(output, "        {{")?;
-                        for (value, target) in targets {
-                            writeln!(output, "            case {value}: goto {target};")?;
-                        }
-                        writeln!(output, "        }};")
-                    }
-                    CommandData::Array(values) => {
-                        writeln!(output, "        {register} = {{")?;
-                        for value in values {
-                            writeln!(output, "            {value},")?;
-                        }
-                        writeln!(output, "        }};")
-                    }
-                },
-                CommandParameters::RegisterRegisterLabel(register1, register2, label) => {
-                    let op = if_op(command);
-                    if op.is_empty() {
-                        writeln!(
-                            output,
-                            "        {command} {register1}, {register2}, {label};"
-                        )
-                    } else {
-                        writeln!(
-                            output,
-                            "        if {register1} {op} {register2} goto {label};"
-                        )
-                    }
-                }
-                CommandParameters::ResultCall(result, call) => {
-                    writeln!(output, "        {result} = {call};")
-                }
-                CommandParameters::ResultMethodHandle(result, invoke_type, method) => {
-                    writeln!(output, "        {result} = {invoke_type}@{method};")
-                }
-            },
+                writeln!(output, "{};", result)
+            }
             Self::Catch {
                 exception,
                 start_label,
@@ -386,11 +175,11 @@ mod tests {
             v3 = 0x400;
             v4 = class java.lang.String;
             v5 = new java.lang.String;
-            if v6 > 0 goto cond_0;
+            if (v6 > 0) goto cond_0;
             goto goto_1;
             v7 = p1[v3];
             v8 = p3 - p2;
-            if v9 >= v10 goto cond_1;
+            if (v9 >= v10) goto cond_1;
             v3[p1] = v11;
             v12 = p0.<android.text.Layout o2.h.a>;
             p0.<long t4.o.x> = v13;

@@ -115,7 +115,7 @@ mod tests {
     use super::*;
     use crate::annotation::{AnnotationParameter, AnnotationParameterValue, AnnotationVisibility};
     use crate::error::ParseErrorDisplayed;
-    use crate::instruction::{CommandParameters, RawRegister, Register, Registers};
+    use crate::instruction::{CommandParameter, RawRegister, Register, Registers};
     use crate::literal::Literal;
     use crate::r#type::{CallSignature, MethodSignature, Type};
 
@@ -200,22 +200,24 @@ mod tests {
                 instructions: vec![
                     Instruction::Command {
                         command: "invoke-direct".to_string(),
-                        parameters: CommandParameters::ResultRegistersMethod(
-                            None,
-                            Registers::List(vec![Register::Raw(RawRegister::Parameter(0))]),
-                            MethodSignature {
+                        parameters: vec![
+                            CommandParameter::DefaultEmptyResult(None),
+                            CommandParameter::Registers(Registers::List(vec![Register::Raw(
+                                RawRegister::Parameter(0)
+                            )])),
+                            CommandParameter::Method(MethodSignature {
                                 object_type: Type::Object("java.lang.Object".to_string()),
                                 method_name: "<init>".to_string(),
                                 call_signature: CallSignature {
                                     parameter_types: Vec::new(),
                                     return_type: Type::Void,
                                 },
-                            }
-                        )
+                            })
+                        ]
                     },
                     Instruction::Command {
                         command: "return-void".to_string(),
-                        parameters: CommandParameters::None,
+                        parameters: Vec::new(),
                     }
                 ],
             }
