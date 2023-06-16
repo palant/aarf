@@ -346,12 +346,9 @@ impl Registers {
 
     fn stringify_list(list: &[Register], split_first: bool) -> (Option<String>, String) {
         if split_first && !list.is_empty() {
-            (
-                Some(list[0].to_string()),
-                list[1..].iter().map(Register::to_string).join(", "),
-            )
+            (Some(list[0].to_string()), list[1..].iter().join(", "))
         } else {
-            (None, list.iter().map(Register::to_string).join(", "))
+            (None, list.iter().join(", "))
         }
     }
 
