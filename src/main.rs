@@ -83,14 +83,22 @@ fn main() {
             apk_path,
             output_dir,
         } => {
-            locate_apktool(args.apktool_path)
+            let status = locate_apktool(args.apktool_path)
                 .arg("decode")
+                .arg("--force")
                 .arg("--output")
                 .arg(output_dir)
                 .arg(apk_path)
-                .output()
-                .expect("Failed to run apktool");
+                .spawn()
+                .expect("Failed running apktool")
+                .wait()
+                .expect("Failed waiting for apktool to finish");
+            if !status.success() {
+                eprintln!("apktool exited with error code.");
+                std::process::exit(1);
+            }
 
+            println!("Converting Smali files to Jimple...");
             for entry in walkdir::WalkDir::new(output_dir)
                 .into_iter()
                 .filter_map(Result::ok)
