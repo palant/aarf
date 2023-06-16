@@ -9,7 +9,7 @@ fn stringify_parameter(parameter: &CommandParameter) -> String {
         | CommandParameter::Register(register) => register.to_string(),
         CommandParameter::DefaultEmptyResult(None) => String::new(),
         CommandParameter::Variable(variable) => variable.to_string(),
-        CommandParameter::Registers(registers) => registers.to_list(false).1,
+        CommandParameter::Registers(registers) => registers.to_string(false).1,
         CommandParameter::Literal(literal) => literal.to_string(),
         CommandParameter::Label(label) => label.clone(),
         CommandParameter::Type(r#type) => r#type.to_string(),
@@ -84,7 +84,7 @@ impl Instruction {
                         let placeholder1 = format!("{{{index}.this}}");
                         let placeholder2 = format!("{{{index}.args}}");
                         if result.contains(&placeholder1) || result.contains(&placeholder2) {
-                            let (this, args) = registers.to_list(true);
+                            let (this, args) = registers.to_string(true);
                             let this = this.unwrap_or_else(|| "???".to_string());
                             result = result.replace(&placeholder1, &this);
                             result = result.replace(&placeholder2, &args);

@@ -352,7 +352,7 @@ impl Registers {
         }
     }
 
-    pub fn to_list(&self, split_first: bool) -> (Option<String>, String) {
+    pub fn to_string(&self, split_first: bool) -> (Option<String>, String) {
         match self {
             Self::List(list) => Self::stringify_list(list, split_first),
             Self::Range(from, to) => {
