@@ -96,7 +96,7 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "const-class" => [Result Type] "class {1}",
     "monitor-enter" => [Register] "monitor-enter {0}",
     "monitor-exit" => [Register] "monitor-exit {0}",
-    "check-cast" => [Register Type] "check-cast = ({1}) {0}",
+    "check-cast" => [Register Type] "{0} = ({1}) {0}",
     "instance-of" => [Result Register Type] "{1} instance-of {2}",
     "array-length" => [Result Register] "array-length {1}",
     "new-instance" => [Result Type] "new {1}",
