@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{CommandData, CommandParameter, Instruction, Register};
+use super::{CommandData, CommandParameter, Instruction, Register, DEFS};
 
 impl Instruction {
     pub fn get_moved_result(&self) -> Option<Register> {
@@ -9,7 +9,11 @@ impl Instruction {
             parameters,
         } = self
         {
-            if command.starts_with("move-result") {
+            if DEFS
+                .get(command)
+                .map(|d| d.is_moved_result)
+                .unwrap_or(false)
+            {
                 if let Some(CommandParameter::Result(result)) = parameters.get(0) {
                     return Some(result.clone());
                 }

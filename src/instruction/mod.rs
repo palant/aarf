@@ -30,6 +30,7 @@ pub enum ParameterKind {
 struct InstructionDef {
     parameters: &'static [ParameterKind],
     format: &'static str,
+    is_moved_result: bool,
 }
 
 impl InstructionDef {
@@ -37,6 +38,7 @@ impl InstructionDef {
         Self {
             parameters: &[],
             format: "",
+            is_moved_result: false,
         }
     }
 }
@@ -64,6 +66,7 @@ macro_rules! instructions {
     }
 }
 
+#[allow(clippy::needless_update)]
 const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "nop" => [] "nop",
     "move" => [Result Register] "{1}",
@@ -75,9 +78,9 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "move-object" => [Result Register] "{1}",
     "move-object/from16" => [Result Register] "{1}",
     "move-object/16" => [Result Register] "{1}",
-    "move-result" => [Result] "move-result",
-    "move-result-wide" => [Result] "move-result",
-    "move-result-object" => [Result] "move-result",
+    "move-result" => [Result] "move-result" is_moved_result=true,
+    "move-result-wide" => [Result] "move-result" is_moved_result=true,
+    "move-result-object" => [Result] "move-result" is_moved_result=true,
     "move-exception" => [Result] "move-exception",
     "return-void" => [] "return",
     "return" => [Register] "return {0}",
