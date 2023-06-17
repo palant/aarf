@@ -140,7 +140,6 @@ mod tests {
             array-length v0, v1
             return-wide v1
             monitor-enter v2
-            check-cast p0, Lj2/b;
             .line 6
             const/16 v3, 0x400
             const-class v4, Ljava/lang/String;
@@ -173,7 +172,6 @@ mod tests {
             v0 = array-length v1;
             return v1;
             monitor-enter v2;
-            p0 = (j2.b) p0;
             // line 6
             v3 = 0x400;
             v4 = class java.lang.String;

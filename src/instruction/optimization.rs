@@ -50,4 +50,22 @@ impl Instruction {
             }
         }
     }
+
+    pub fn fix_check_cast(&mut self) {
+        if let Self::Command {
+            command,
+            parameters,
+        } = self
+        {
+            if command != "check-cast" {
+                return;
+            }
+            if let Some(
+                [CommandParameter::DefaultEmptyResult(None), CommandParameter::Register(register)],
+            ) = parameters.get(0..2)
+            {
+                parameters[0] = CommandParameter::DefaultEmptyResult(Some(register.clone()));
+            }
+        }
+    }
 }

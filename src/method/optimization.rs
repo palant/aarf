@@ -77,6 +77,7 @@ impl Method {
 
         let mut i = 0;
         while i < self.instructions.len() {
+            self.instructions[i].fix_check_cast();
             self.instructions[i].resolve_data(&command_data);
             i = self.merge_line_numbers(i);
             i = self.inline_results(i);
@@ -115,6 +116,8 @@ mod tests {
 
                 invoke-static {v18, v19}, Ls1/b;->d(J)J
                 move-result-wide v13
+
+                check-cast p0, Lj2/b;
 
                 .line 1
                 packed-switch v2, :pswitch_data_0
@@ -165,6 +168,8 @@ mod tests {
                 v15 = invoke-direct v16.<java.lang.String s1.b$a.<init>(kotlin.jvm.internal.DefaultConstructorMarker)>(v17);
 
                 v13 = invoke-static <long s1.b.d(long)>(v18, v19);
+
+                p0 = (j2.b) p0;
 
                 // line 1
                 switch(v2)
