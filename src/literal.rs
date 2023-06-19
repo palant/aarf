@@ -18,6 +18,7 @@ pub enum Literal {
     Double(f64),
     String(String),
     Class(Type),
+    Method(MethodSignature),
     MethodHandle(String, MethodSignature),
     MethodType(CallSignature),
 }
@@ -243,6 +244,7 @@ impl Display for Literal {
             Self::Double(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "\"{value}\""),
             Self::Class(class) => write!(f, "{class}"),
+            Self::Method(method) => write!(f, "{method}"),
             Self::MethodHandle(invoke_type, method) => write!(f, "{invoke_type}@{method}"),
             Self::MethodType(method_type) => write!(f, "{method_type}"),
         }

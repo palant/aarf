@@ -1,6 +1,6 @@
 use crate::error::{Error, ParseError};
 use crate::literal::Literal;
-use crate::r#type::{MethodSignature, Type};
+use crate::r#type::Type;
 use crate::tokenizer::Tokenizer;
 
 mod jimple;
@@ -39,7 +39,6 @@ impl TryFrom<&str> for AnnotationVisibility {
 pub enum AnnotationParameterValue {
     Literal(Literal),
     Type(Type),
-    Method(MethodSignature),
     Enum(Type, String),
     Array(Vec<AnnotationParameterValue>),
     SubAnnotation(Annotation),

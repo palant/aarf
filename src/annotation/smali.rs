@@ -46,7 +46,7 @@ impl AnnotationParameterValue {
             Ok((input, Self::Array(entries)))
         } else if Type::read(input).is_ok() {
             if let Ok((input, signature)) = MethodSignature::read(input) {
-                Ok((input, Self::Method(signature)))
+                Ok((input, Self::Literal(Literal::Method(signature))))
             } else {
                 let (input, r#type) = Type::read(input)?;
                 Ok((input, Self::Type(r#type)))
@@ -232,29 +232,33 @@ mod tests {
                             },
                             AnnotationParameter {
                                 name: "methodValue".to_string(),
-                                value: AnnotationParameterValue::Method(MethodSignature {
-                                    object_type: Type::Object("10".to_string()),
-                                    method_name: "11".to_string(),
-                                    call_signature: CallSignature {
-                                        parameter_types: Vec::new(),
-                                        return_type: Type::Void,
-                                    },
-                                }),
+                                value: AnnotationParameterValue::Literal(Literal::Method(
+                                    MethodSignature {
+                                        object_type: Type::Object("10".to_string()),
+                                        method_name: "11".to_string(),
+                                        call_signature: CallSignature {
+                                            parameter_types: Vec::new(),
+                                            return_type: Type::Void,
+                                        },
+                                    }
+                                )),
                             },
                             AnnotationParameter {
                                 name: "methodValue2".to_string(),
-                                value: AnnotationParameterValue::Method(MethodSignature {
-                                    object_type: Type::Object("j2.b".to_string()),
-                                    method_name: "<init>".to_string(),
-                                    call_signature: CallSignature {
-                                        parameter_types: vec![
-                                            Type::Object("java.lang.String".to_string()),
-                                            Type::Int,
-                                            Type::Int,
-                                        ],
-                                        return_type: Type::Void,
-                                    },
-                                }),
+                                value: AnnotationParameterValue::Literal(Literal::Method(
+                                    MethodSignature {
+                                        object_type: Type::Object("j2.b".to_string()),
+                                        method_name: "<init>".to_string(),
+                                        call_signature: CallSignature {
+                                            parameter_types: vec![
+                                                Type::Object("java.lang.String".to_string()),
+                                                Type::Int,
+                                                Type::Int,
+                                            ],
+                                            return_type: Type::Void,
+                                        },
+                                    }
+                                )),
                             },
                             AnnotationParameter {
                                 name: "enumValue".to_string(),
