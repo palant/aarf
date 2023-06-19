@@ -6,11 +6,11 @@ impl AnnotationParameterValue {
     pub fn write_jimple(&self, output: &mut dyn Write) -> Result<(), std::io::Error> {
         match self {
             Self::Literal(literal) => write!(output, "{literal}"),
-            Self::Type(type_name) => write!(output, "class {type_name}"),
+            Self::Type(type_name) => write!(output, "{type_name}.class"),
             Self::Method(signature) => write!(output, "public static {signature}"),
             Self::Enum(type_name, constant) => write!(output, "{type_name}.{constant}"),
             Self::Array(array) => {
-                write!(output, "[")?;
+                write!(output, "{{")?;
                 let mut first = true;
                 for value in array {
                     if first {
@@ -20,7 +20,7 @@ impl AnnotationParameterValue {
                     }
                     value.write_jimple(output)?;
                 }
-                write!(output, "]")
+                write!(output, "}}")
             }
             Self::SubAnnotation(annotation) => annotation.write_jimple(output, -1),
         }
