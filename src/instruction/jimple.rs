@@ -15,8 +15,6 @@ fn stringify_parameter(parameter: &CommandParameter) -> String {
         CommandParameter::Type(r#type) => r#type.to_string(),
         CommandParameter::Field(field) => field.to_string(),
         CommandParameter::Method(method) => method.to_string(),
-        CommandParameter::MethodHandle(invoke_type, method) => format!("{invoke_type}@{method}"),
-        CommandParameter::Call(call) => call.to_string(),
         CommandParameter::Data(CommandData::Label(label)) => {
             eprintln!("Warning: Writing out unresolved command data label {label}");
             "??<label>??".to_string()

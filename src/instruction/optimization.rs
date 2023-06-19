@@ -90,10 +90,7 @@ impl Instruction {
             CommandParameter::Literal(literal) => Some(literal.into()),
             CommandParameter::Type(r#type) => Some(r#type.into()),
             CommandParameter::Field(field) => Some((&field.field_type).into()),
-            CommandParameter::Method(method) | CommandParameter::MethodHandle(_, method) => {
-                Some((&method.call_signature.return_type).into())
-            }
-            CommandParameter::Call(call) => Some((&call.return_type).into()),
+            CommandParameter::Method(method) => Some((&method.call_signature.return_type).into()),
             CommandParameter::Variable(_)
             | CommandParameter::Registers(_)
             | CommandParameter::Label(_)
@@ -138,8 +135,6 @@ impl Instruction {
                         }
                     }
                 }
-                ResultTypeDef::Method => Some(ResultType::Method),
-                ResultTypeDef::MethodHandle => Some(ResultType::MethodHandle),
                 ResultTypeDef::Exception => {
                     Some(Type::Object("java.lang.exception".to_string()).into())
                 }
@@ -166,6 +161,7 @@ mod tests {
     use super::*;
     use crate::error::ParseErrorDisplayed;
     use crate::literal::Literal;
+    use crate::r#type::{CallSignature, MethodSignature};
     use crate::tokenizer::Tokenizer;
 
     fn tokenizer(data: &str) -> Tokenizer {
@@ -193,6 +189,8 @@ mod tests {
             aget-object v5, v2, v4
             iget-boolean p2, p0, Lhd/c;->x:Z
             invoke-direct {v16, v17}, Ls1/b$a;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)Ljava/lang/String;
+            const-method-handle v0, invoke-static@Ljava/lang/Integer;->toString(I)Ljava/lang/String;
+            const-method-type v0, (II)I
         "#.trim());
 
         let expected = [
@@ -200,9 +198,9 @@ mod tests {
             Some(ResultType::Literal(Literal::Int(0x3f))),
             Some(ResultType::Type(Type::Object("j2.b".to_string()))),
             Some(ResultType::Type(Type::Double)),
-            Some(ResultType::Type(Type::Object(
-                "java.lang.Class".to_string(),
-            ))),
+            Some(ResultType::Literal(Literal::Class(Type::Object(
+                "hd.e".to_string(),
+            )))),
             Some(ResultType::Type(Type::Array(Box::new(Type::Int)))),
             Some(ResultType::Type(Type::Object(
                 "java.lang.String".to_string(),
@@ -211,6 +209,21 @@ mod tests {
             Some(ResultType::Type(Type::Object(
                 "java.lang.String".to_string(),
             ))),
+            Some(ResultType::Literal(Literal::MethodHandle(
+                "invoke-static".to_string(),
+                MethodSignature {
+                    object_type: Type::Object("java.lang.Integer".to_string()),
+                    method_name: "toString".to_string(),
+                    call_signature: CallSignature {
+                        parameter_types: vec![Type::Int],
+                        return_type: Type::Object("java.lang.String".to_string()),
+                    },
+                },
+            ))),
+            Some(ResultType::Literal(Literal::MethodType(CallSignature {
+                parameter_types: vec![Type::Int, Type::Int],
+                return_type: Type::Int,
+            }))),
         ];
 
         for expected_result_type in expected {

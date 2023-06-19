@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use crate::error::ParseError;
+use crate::r#type::{CallSignature, MethodSignature, Type};
 use crate::tokenizer::Tokenizer;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -16,6 +17,9 @@ pub enum Literal {
     Float(f32),
     Double(f64),
     String(String),
+    Class(Type),
+    MethodHandle(String, MethodSignature),
+    MethodType(CallSignature),
 }
 
 macro_rules! parse_integer {
@@ -238,6 +242,9 @@ impl Display for Literal {
             Self::Float(value) => write!(f, "{value}"),
             Self::Double(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "\"{value}\""),
+            Self::Class(class) => write!(f, "{class}"),
+            Self::MethodHandle(invoke_type, method) => write!(f, "{invoke_type}@{method}"),
+            Self::MethodType(method_type) => write!(f, "{method_type}"),
         }
     }
 }

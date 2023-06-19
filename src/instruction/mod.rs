@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::fmt::{Display, Formatter};
 
 use crate::literal::Literal;
-use crate::r#type::{CallSignature, FieldSignature, MethodSignature, Type};
+use crate::r#type::{FieldSignature, MethodSignature, Type};
 
 mod jimple;
 mod optimization;
@@ -19,10 +19,11 @@ pub enum ParameterKind {
     Literal,
     Label,
     Type,
+    Class,
     Field,
     Method,
     MethodHandle,
-    Call,
+    MethodType,
     Data,
 }
 
@@ -41,8 +42,6 @@ pub enum ResultTypeDef {
     From(usize),
     ElementFrom(usize),
     Exception,
-    Method,
-    MethodHandle,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -117,7 +116,7 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "const-wide/high16" => [Result Literal] "{1} << 48" result_type=ResultTypeDef::From(1),
     "const-string" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
     "const-string/jumbo" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
-    "const-class" => [Result Type] "class {1}" result_type=ResultTypeDef::Object("java.lang.Class"),
+    "const-class" => [Result Class] "class {1}" result_type=ResultTypeDef::From(1),
     "monitor-enter" => [Register] "monitor-enter {0}",
     "monitor-exit" => [Register] "monitor-exit {0}",
     "check-cast" => [DefaultEmptyResult Register Type] "({2}) {1}" result_type=ResultTypeDef::From(2),
@@ -307,11 +306,11 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "shl-int/lit8" => [Result Register Literal] "{1} << {2}" result_type=ResultTypeDef::From(1),
     "shr-int/lit8" => [Result Register Literal] "{1} >> {2}" result_type=ResultTypeDef::From(1),
     "ushr-int/lit8" => [Result Register Literal] "{1} >>> {2}" result_type=ResultTypeDef::From(1),
-    "invoke-polymorphic" => [DefaultEmptyResult Registers Method Call] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
-    "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method Call] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
+    "invoke-polymorphic" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
+    "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
     // TODO: invoke-custom and invoke-custom/range
-    "const-method-handle" => [Result MethodHandle] "{1}" result_type=ResultTypeDef::MethodHandle,
-    "const-method-type" => [Result Call] "{1}" result_type=ResultTypeDef::Method,
+    "const-method-handle" => [Result MethodHandle] "{1}" result_type=ResultTypeDef::From(1),
+    "const-method-type" => [Result MethodType] "{1}" result_type=ResultTypeDef::From(1),
 );
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -410,8 +409,6 @@ pub enum CommandParameter {
     Type(Type),
     Field(FieldSignature),
     Method(MethodSignature),
-    MethodHandle(String, MethodSignature),
-    Call(CallSignature),
     Data(CommandData),
 }
 
@@ -450,8 +447,6 @@ impl Instruction {
 pub enum ResultType {
     Type(Type),
     Literal(Literal),
-    Method,
-    MethodHandle,
 }
 
 impl From<Type> for ResultType {

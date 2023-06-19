@@ -17,6 +17,9 @@ pub enum Type {
     Void,
     Object(String),
     Array(Box<Type>),
+    Class,
+    MethodHandle,
+    MethodType,
 }
 
 impl Type {
@@ -64,6 +67,9 @@ impl Type {
             Self::Void => "void".into(),
             Self::Object(name) => name.into(),
             Self::Array(subtype) => subtype.get_name() + "[]",
+            Self::Class => "Class".into(),
+            Self::MethodHandle => "MethodHandle".into(),
+            Self::MethodType => "MethodType".into(),
         }
     }
 

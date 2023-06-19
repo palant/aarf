@@ -246,10 +246,10 @@ mod tests {
                             return_type: Type::Object("java.lang.Object".to_string())
                         },
                     }),
-                    CommandParameter::Call(CallSignature {
+                    CommandParameter::Literal(Literal::MethodType(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Void,
-                    }),
+                    })),
                 ],
             }
         );
@@ -275,10 +275,10 @@ mod tests {
                             return_type: Type::Object("java.lang.Object".to_string())
                         },
                     }),
-                    CommandParameter::Call(CallSignature {
+                    CommandParameter::Literal(Literal::MethodType(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Void,
-                    })
+                    }))
                 ],
             }
         );
@@ -290,7 +290,7 @@ mod tests {
                 command: "const-method-handle".to_string(),
                 parameters: vec![
                     CommandParameter::Result(Register::Local(0)),
-                    CommandParameter::MethodHandle(
+                    CommandParameter::Literal(Literal::MethodHandle(
                         "invoke-static".to_string(),
                         MethodSignature {
                             object_type: Type::Object("java.lang.Integer".to_string()),
@@ -300,7 +300,7 @@ mod tests {
                                 return_type: Type::Object("java.lang.String".to_string())
                             },
                         },
-                    ),
+                    )),
                 ],
             }
         );
@@ -312,10 +312,10 @@ mod tests {
                 command: "const-method-type".to_string(),
                 parameters: vec![
                     CommandParameter::Result(Register::Local(0)),
-                    CommandParameter::Call(CallSignature {
+                    CommandParameter::Literal(Literal::MethodType(CallSignature {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Int
-                    }),
+                    })),
                 ],
             }
         );
