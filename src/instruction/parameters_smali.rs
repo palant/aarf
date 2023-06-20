@@ -1,7 +1,7 @@
 use super::{smali::read_label, CommandData, CommandParameter, ParameterKind, Register, Registers};
 use crate::error::ParseError;
 use crate::literal::Literal;
-use crate::r#type::{FieldSignature, MethodSignature, Type};
+use crate::r#type::{CallSite, FieldSignature, MethodSignature, Type};
 use crate::tokenizer::Tokenizer;
 
 impl CommandParameter {
@@ -63,6 +63,10 @@ impl CommandParameter {
             ParameterKind::Method => {
                 let (input, method) = MethodSignature::read(input)?;
                 (input, Self::Method(method))
+            }
+            ParameterKind::CallSite => {
+                let (input, call_site) = CallSite::read(input)?;
+                (input, Self::CallSite(call_site))
             }
             ParameterKind::Data => {
                 let (input, label) = read_label(input)?;

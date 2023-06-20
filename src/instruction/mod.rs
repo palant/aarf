@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::fmt::{Display, Formatter};
 
 use crate::literal::Literal;
-use crate::r#type::{FieldSignature, MethodSignature, Type};
+use crate::r#type::{CallSite, FieldSignature, MethodSignature, Type};
 
 mod jimple;
 mod optimization;
@@ -26,6 +26,7 @@ pub enum ParameterKind {
     Type,
     Field,
     Method,
+    CallSite,
     Data,
 }
 
@@ -310,7 +311,8 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "ushr-int/lit8" => [Result Register Int] "{1} >>> {2}" result_type=ResultTypeDef::From(1),
     "invoke-polymorphic" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
     "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
-    // TODO: invoke-custom and invoke-custom/range
+    "invoke-custom" => [DefaultEmptyResult Registers CallSite] "invoke-custom {1.this}.<{2}>({1.args})" result_type=ResultTypeDef::From(2),
+    "invoke-custom/range" => [DefaultEmptyResult Registers CallSite] "invoke-custom {1.this}.<{2}>({1.args})" result_type=ResultTypeDef::From(2),
     "const-method-handle" => [Result MethodHandle] "{1}" result_type=ResultTypeDef::From(1),
     "const-method-type" => [Result MethodType] "{1}" result_type=ResultTypeDef::From(1),
 );
@@ -411,6 +413,7 @@ pub enum CommandParameter {
     Type(Type),
     Field(FieldSignature),
     Method(MethodSignature),
+    CallSite(CallSite),
     Data(CommandData),
 }
 

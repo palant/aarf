@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
 
 use crate::error::ParseError;
+use crate::literal::Literal;
 use crate::tokenizer::Tokenizer;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -203,6 +204,54 @@ impl Display for MethodSignature {
             "{} {}.{}({params})",
             self.call_signature.return_type, self.object_type, self.method_name
         )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CallSite {
+    pub name: String,
+    pub params: Vec<Literal>,
+    pub method: MethodSignature,
+}
+
+impl CallSite {
+    pub fn read(input: &Tokenizer) -> Result<(Tokenizer, Self), ParseError> {
+        let (input, name) = input.read_keyword()?;
+        let mut input = input.expect_char('(')?;
+        let mut params = Vec::new();
+        while input.expect_char(')').is_err() {
+            let param;
+            (input, param) = Literal::read(&input)?;
+            params.push(param);
+
+            if input.expect_char(')').is_err() {
+                input = input.expect_char(',')?;
+            }
+        }
+        let input = input.expect_char(')')?;
+        let input = input.expect_char('@')?;
+
+        let (input, method) = MethodSignature::read(&input)?;
+        Ok((
+            input,
+            Self {
+                name,
+                params,
+                method,
+            },
+        ))
+    }
+}
+
+impl Display for CallSite {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let params = self
+            .params
+            .iter()
+            .map(Literal::to_string)
+            .collect::<Vec<_>>()
+            .join(", ");
+        write!(f, "{}({params})@{}", self.name, self.method)
     }
 }
 

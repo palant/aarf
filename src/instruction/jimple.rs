@@ -15,6 +15,7 @@ fn stringify_parameter(parameter: &CommandParameter) -> String {
         CommandParameter::Type(r#type) => r#type.to_string(),
         CommandParameter::Field(field) => field.to_string(),
         CommandParameter::Method(method) => method.to_string(),
+        CommandParameter::CallSite(call_site) => call_site.to_string(),
         CommandParameter::Data(CommandData::Label(label)) => {
             eprintln!("Warning: Writing out unresolved command data label {label}");
             "??<label>??".to_string()
@@ -159,6 +160,7 @@ mod tests {
             shl-int/lit8 v22, p1, 0x3
             rsub-int v23, v24, 0x800
             invoke-polymorphic {p1, v25, v26}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
+            invoke-custom/range {p0 .. p1}, backwardsLinkedCallSite("doSomething", (LCustom;Ljava/lang/String;)Ljava/lang/String;, "just testing")@LBootstrapLinker;->backwardsLink(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
         "#.trim());
 
         let mut expected = r#"
@@ -191,6 +193,7 @@ mod tests {
             v22 = p1 << 0x3;
             v23 = 0x800 - v24;
             invoke-polymorphic p1.<java.lang.Object java.lang.invoke.MethodHandle.invoke(java.lang.Object[])>(v25, v26), <void (int, int)>;
+            invoke-custom p0.<backwardsLinkedCallSite("doSomething", java.lang.String (Custom, java.lang.String), "just testing")@java.lang.invoke.CallSite BootstrapLinker.backwardsLink(java.lang.invoke.MethodHandles$Lookup, java.lang.String, java.lang.invoke.MethodType, java.lang.String)>(p1);
         "#.trim().split('\n').map(|s| s.trim().to_string()).collect::<Vec<_>>();
 
         while let Ok((i, instruction)) = Instruction::read(&input) {

@@ -91,6 +91,9 @@ impl Instruction {
             CommandParameter::Type(r#type) => Some(r#type.into()),
             CommandParameter::Field(field) => Some((&field.field_type).into()),
             CommandParameter::Method(method) => Some((&method.call_signature.return_type).into()),
+            CommandParameter::CallSite(call_site) => {
+                Some((&call_site.method.call_signature.return_type).into())
+            }
             CommandParameter::Variable(_)
             | CommandParameter::Registers(_)
             | CommandParameter::Label(_)

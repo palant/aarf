@@ -187,7 +187,7 @@ mod tests {
     use super::*;
     use crate::error::ParseErrorDisplayed;
     use crate::instruction::{Register, Registers};
-    use crate::r#type::{CallSignature, MethodSignature};
+    use crate::r#type::{CallSignature, CallSite, MethodSignature};
 
     fn tokenizer(data: &str) -> Tokenizer {
         Tokenizer::new(data.to_string(), std::path::Path::new("dummy"))
@@ -202,6 +202,8 @@ mod tests {
                 :label
                 invoke-polymorphic {p1, v0, v1}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
                 invoke-polymorphic/range {v0 .. v2}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
+                invoke-custom {v0, v1}, normallyLinkedCallSite("doSomething", (LCustom;Ljava/lang/String;)Ljava/lang/String;, "just testing")@LBootstrapLinker;->normalLink(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+                invoke-custom/range {p0 .. p1}, backwardsLinkedCallSite("doSomething", (LCustom;Ljava/lang/String;)Ljava/lang/String;, "just testing")@LBootstrapLinker;->backwardsLink(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
                 const-method-handle v0, invoke-static@Ljava/lang/Integer;->toString(I)Ljava/lang/String;
                 const-method-type v0, (II)I
                 .catch Ljava/lang/NullPointerException; {:try_start_0 .. :try_end_0} :catch_0
@@ -279,6 +281,94 @@ mod tests {
                         parameter_types: vec![Type::Int, Type::Int],
                         return_type: Type::Void,
                     }))
+                ],
+            }
+        );
+
+        let (input, instruction) = Instruction::read(&input)?;
+        assert_eq!(
+            instruction,
+            Instruction::Command {
+                command: "invoke-custom".to_string(),
+                parameters: vec![
+                    CommandParameter::DefaultEmptyResult(None),
+                    CommandParameter::Registers(Registers::List(vec![
+                        Register::Local(0),
+                        Register::Local(1),
+                    ])),
+                    CommandParameter::CallSite(CallSite {
+                        name: "normallyLinkedCallSite".to_string(),
+                        params: vec![
+                            Literal::String("doSomething".to_string()),
+                            Literal::MethodType(CallSignature {
+                                parameter_types: vec![
+                                    Type::Object("Custom".to_string()),
+                                    Type::Object("java.lang.String".to_string()),
+                                ],
+                                return_type: Type::Object("java.lang.String".to_string())
+                            }),
+                            Literal::String("just testing".to_string()),
+                        ],
+                        method: MethodSignature {
+                            object_type: Type::Object("BootstrapLinker".to_string()),
+                            method_name: "normalLink".to_string(),
+                            call_signature: CallSignature {
+                                parameter_types: vec![
+                                    Type::Object(
+                                        "java.lang.invoke.MethodHandles$Lookup".to_string()
+                                    ),
+                                    Type::Object("java.lang.String".to_string()),
+                                    Type::Object("java.lang.invoke.MethodType".to_string()),
+                                    Type::Object("java.lang.String".to_string()),
+                                ],
+                                return_type: Type::Object("java.lang.invoke.CallSite".to_string())
+                            },
+                        },
+                    }),
+                ],
+            }
+        );
+
+        let (input, instruction) = Instruction::read(&input)?;
+        assert_eq!(
+            instruction,
+            Instruction::Command {
+                command: "invoke-custom/range".to_string(),
+                parameters: vec![
+                    CommandParameter::DefaultEmptyResult(None),
+                    CommandParameter::Registers(Registers::Range(
+                        Register::Parameter(0),
+                        Register::Parameter(1),
+                    )),
+                    CommandParameter::CallSite(CallSite {
+                        name: "backwardsLinkedCallSite".to_string(),
+                        params: vec![
+                            Literal::String("doSomething".to_string()),
+                            Literal::MethodType(CallSignature {
+                                parameter_types: vec![
+                                    Type::Object("Custom".to_string()),
+                                    Type::Object("java.lang.String".to_string()),
+                                ],
+                                return_type: Type::Object("java.lang.String".to_string())
+                            }),
+                            Literal::String("just testing".to_string()),
+                        ],
+                        method: MethodSignature {
+                            object_type: Type::Object("BootstrapLinker".to_string()),
+                            method_name: "backwardsLink".to_string(),
+                            call_signature: CallSignature {
+                                parameter_types: vec![
+                                    Type::Object(
+                                        "java.lang.invoke.MethodHandles$Lookup".to_string()
+                                    ),
+                                    Type::Object("java.lang.String".to_string()),
+                                    Type::Object("java.lang.invoke.MethodType".to_string()),
+                                    Type::Object("java.lang.String".to_string()),
+                                ],
+                                return_type: Type::Object("java.lang.invoke.CallSite".to_string())
+                            },
+                        },
+                    }),
                 ],
             }
         );
