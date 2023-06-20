@@ -44,13 +44,6 @@ impl AnnotationParameterValue {
             }
             let input = input.expect_char('}')?;
             Ok((input, Self::Array(entries)))
-        } else if Type::read(input).is_ok() {
-            if let Ok((input, signature)) = MethodSignature::read(input) {
-                Ok((input, Self::Literal(Literal::Method(signature))))
-            } else {
-                let (input, r#type) = Type::read(input)?;
-                Ok((input, Self::Type(r#type)))
-            }
         } else {
             let (input, value) = Literal::read(input)?;
             Ok((input, Self::Literal(value)))
@@ -134,6 +127,8 @@ mod tests {
                             typeValue = L10;
                             methodValue = L10;->11()V
                             methodValue2 = Lj2/b;-><init>(Ljava/lang/String;II)V
+                            methodHandle = invoke-static@Lj2/b;-><init>(Ljava/lang/String;II)V
+                            methodType = (Ljava/lang/String;II)V
                             enumValue = .enum LEnum;->12:LEnum;
                         .end subannotation
             .end annotation
@@ -226,8 +221,8 @@ mod tests {
                             },
                             AnnotationParameter {
                                 name: "typeValue".to_string(),
-                                value: AnnotationParameterValue::Type(Type::Object(
-                                    "10".to_string()
+                                value: AnnotationParameterValue::Literal(Literal::Class(
+                                    Type::Object("10".to_string())
                                 )),
                             },
                             AnnotationParameter {
@@ -261,6 +256,37 @@ mod tests {
                                 )),
                             },
                             AnnotationParameter {
+                                name: "methodHandle".to_string(),
+                                value: AnnotationParameterValue::Literal(Literal::MethodHandle(
+                                    "invoke-static".to_string(),
+                                    MethodSignature {
+                                        object_type: Type::Object("j2.b".to_string()),
+                                        method_name: "<init>".to_string(),
+                                        call_signature: CallSignature {
+                                            parameter_types: vec![
+                                                Type::Object("java.lang.String".to_string()),
+                                                Type::Int,
+                                                Type::Int,
+                                            ],
+                                            return_type: Type::Void,
+                                        },
+                                    }
+                                )),
+                            },
+                            AnnotationParameter {
+                                name: "methodType".to_string(),
+                                value: AnnotationParameterValue::Literal(Literal::MethodType(
+                                    CallSignature {
+                                        parameter_types: vec![
+                                            Type::Object("java.lang.String".to_string()),
+                                            Type::Int,
+                                            Type::Int,
+                                        ],
+                                        return_type: Type::Void,
+                                    }
+                                )),
+                            },
+                            AnnotationParameter {
                                 name: "enumValue".to_string(),
                                 value: AnnotationParameterValue::Enum(
                                     Type::Object("Enum".to_string()),
@@ -283,9 +309,11 @@ mod tests {
                 visibility: AnnotationVisibility::Runtime,
                 parameters: vec![AnnotationParameter {
                     name: "value".to_string(),
-                    value: AnnotationParameterValue::Array(vec![AnnotationParameterValue::Type(
-                        Type::Object("j2.b$a".to_string())
-                    ),]),
+                    value: AnnotationParameterValue::Array(vec![
+                        AnnotationParameterValue::Literal(Literal::Class(Type::Object(
+                            "j2.b$a".to_string()
+                        ))),
+                    ]),
                 }],
             }
         );

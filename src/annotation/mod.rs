@@ -38,7 +38,6 @@ impl TryFrom<&str> for AnnotationVisibility {
 #[derive(Debug, PartialEq)]
 pub enum AnnotationParameterValue {
     Literal(Literal),
-    Type(Type),
     Enum(Type, String),
     Array(Vec<AnnotationParameterValue>),
     SubAnnotation(Annotation),

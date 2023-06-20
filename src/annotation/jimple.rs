@@ -6,7 +6,6 @@ impl AnnotationParameterValue {
     pub fn write_jimple(&self, output: &mut dyn Write) -> Result<(), std::io::Error> {
         match self {
             Self::Literal(literal) => write!(output, "{literal}"),
-            Self::Type(type_name) => write!(output, "{type_name}.class"),
             Self::Enum(type_name, constant) => write!(output, "{type_name}.{constant}"),
             Self::Array(array) => {
                 write!(output, "{{")?;
@@ -114,6 +113,8 @@ mod tests {
                             typeValue = L10;
                             methodValue = L10;->11()V
                             methodValue2 = Lj2/b;-><init>(Ljava/lang/String;II)V
+                            methodHandle = invoke-static@Lj2/b;-><init>(Ljava/lang/String;II)V
+                            methodType = (Ljava/lang/String;II)V
                             enumValue = .enum LEnum;->12:LEnum;
                         .end subannotation
             .end annotation
@@ -157,6 +158,8 @@ mod tests {
                     typeValue = 10.class,
                     methodValue = void 10.11(),
                     methodValue2 = void j2.b.<init>(java.lang.String, int, int),
+                    methodHandle = invoke-static@void j2.b.<init>(java.lang.String, int, int),
+                    methodType = void (java.lang.String, int, int),
                     enumValue = Enum.12
                 )
             )"#,

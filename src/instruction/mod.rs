@@ -19,11 +19,8 @@ pub enum ParameterKind {
     Literal,
     Label,
     Type,
-    Class,
     Field,
     Method,
-    MethodHandle,
-    MethodType,
     Data,
 }
 
@@ -116,7 +113,7 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "const-wide/high16" => [Result Literal] "{1} << 48" result_type=ResultTypeDef::From(1),
     "const-string" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
     "const-string/jumbo" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
-    "const-class" => [Result Class] "class {1}" result_type=ResultTypeDef::From(1),
+    "const-class" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
     "monitor-enter" => [Register] "monitor-enter {0}",
     "monitor-exit" => [Register] "monitor-exit {0}",
     "check-cast" => [DefaultEmptyResult Register Type] "({2}) {1}" result_type=ResultTypeDef::From(2),
@@ -306,11 +303,11 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "shl-int/lit8" => [Result Register Literal] "{1} << {2}" result_type=ResultTypeDef::From(1),
     "shr-int/lit8" => [Result Register Literal] "{1} >> {2}" result_type=ResultTypeDef::From(1),
     "ushr-int/lit8" => [Result Register Literal] "{1} >>> {2}" result_type=ResultTypeDef::From(1),
-    "invoke-polymorphic" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
-    "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
+    "invoke-polymorphic" => [DefaultEmptyResult Registers Method Literal] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
+    "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method Literal] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
     // TODO: invoke-custom and invoke-custom/range
-    "const-method-handle" => [Result MethodHandle] "{1}" result_type=ResultTypeDef::From(1),
-    "const-method-type" => [Result MethodType] "{1}" result_type=ResultTypeDef::From(1),
+    "const-method-handle" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
+    "const-method-type" => [Result Literal] "{1}" result_type=ResultTypeDef::From(1),
 );
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]

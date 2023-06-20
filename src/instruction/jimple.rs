@@ -172,7 +172,7 @@ mod tests {
             monitor-enter v2;
             // line 6
             v3 = 0x400;
-            v4 = class java.lang.String;
+            v4 = java.lang.String.class;
             v5 = new java.lang.String;
             if (v6 > 0) goto cond_0;
             goto goto_1;

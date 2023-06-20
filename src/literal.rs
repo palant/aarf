@@ -72,6 +72,9 @@ impl Literal {
             } else {
                 return Err(start.unexpected("a literal".into()));
             }
+        } else if input.expect_char('(').is_ok() {
+            let (input, call) = CallSignature::read(&input)?;
+            (input, Self::MethodType(call))
         } else {
             let start = &input;
             let (input, keyword) = input.read_keyword()?;
@@ -82,6 +85,10 @@ impl Literal {
                 (input, Self::Bool(true))
             } else if keyword == "false" {
                 (input, Self::Bool(false))
+            } else if keyword.starts_with("invoke-") {
+                let input = input.expect_char('@')?;
+                let (input, method) = MethodSignature::read(&input)?;
+                (input, Self::MethodHandle(keyword, method))
             } else if let Some(value) = keyword.strip_suffix('t') {
                 let number = parse_integer!(value, i8)
                     .map_err(|_| start.unexpected("a byte literal".into()))?;
@@ -113,10 +120,14 @@ impl Literal {
                         .map_err(|_| start.unexpected("a double literal".into()))?;
                     (input, Self::Double(number))
                 }
-            } else {
-                let number = parse_integer!(keyword, i32)
-                    .map_err(|_| start.unexpected("a literal".into()))?;
+            } else if let Ok(number) = parse_integer!(keyword, i32) {
                 (input, Self::Int(number))
+            } else if let Ok((input, method)) = MethodSignature::read(start) {
+                (input, Self::Method(method))
+            } else if let Ok((input, class)) = Type::read(start) {
+                (input, Self::Class(class))
+            } else {
+                return Err(start.unexpected("a literal".into()));
             }
         })
     }
@@ -243,7 +254,7 @@ impl Display for Literal {
             Self::Float(value) => write!(f, "{value}"),
             Self::Double(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "\"{value}\""),
-            Self::Class(class) => write!(f, "{class}"),
+            Self::Class(class) => write!(f, "{class}.class"),
             Self::Method(method) => write!(f, "{method}"),
             Self::MethodHandle(invoke_type, method) => write!(f, "{invoke_type}@{method}"),
             Self::MethodType(method_type) => write!(f, "{method_type}"),

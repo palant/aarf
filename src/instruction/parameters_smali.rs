@@ -1,7 +1,7 @@
 use super::{smali::read_label, CommandData, CommandParameter, ParameterKind, Register, Registers};
 use crate::error::ParseError;
 use crate::literal::Literal;
-use crate::r#type::{CallSignature, FieldSignature, MethodSignature, Type};
+use crate::r#type::{FieldSignature, MethodSignature, Type};
 use crate::tokenizer::Tokenizer;
 
 impl CommandParameter {
@@ -32,10 +32,6 @@ impl CommandParameter {
                 let (input, r#type) = Type::read(input)?;
                 (input, Self::Type(r#type))
             }
-            ParameterKind::Class => {
-                let (input, r#type) = Type::read(input)?;
-                (input, Self::Literal(Literal::Class(r#type)))
-            }
             ParameterKind::Field => {
                 let (input, field) = FieldSignature::read(input)?;
                 (input, Self::Field(field))
@@ -43,19 +39,6 @@ impl CommandParameter {
             ParameterKind::Method => {
                 let (input, method) = MethodSignature::read(input)?;
                 (input, Self::Method(method))
-            }
-            ParameterKind::MethodHandle => {
-                let (input, invoke_type) = input.read_keyword()?;
-                let input = input.expect_char('@')?;
-                let (input, method) = MethodSignature::read(&input)?;
-                (
-                    input,
-                    Self::Literal(Literal::MethodHandle(invoke_type, method)),
-                )
-            }
-            ParameterKind::MethodType => {
-                let (input, call) = CallSignature::read(input)?;
-                (input, Self::Literal(Literal::MethodType(call)))
             }
             ParameterKind::Data => {
                 let (input, label) = read_label(input)?;
