@@ -73,7 +73,7 @@ impl Literal {
                 return Err(start.unexpected("a literal".into()));
             }
         } else if input.expect_char('(').is_ok() {
-            let (input, call) = CallSignature::read(&input)?;
+            let (input, call) = CallSignature::read(input)?;
             (input, Self::MethodType(call))
         } else {
             let start = &input;
@@ -196,6 +196,22 @@ impl Literal {
             Self::String(value) => Some(value.clone()),
             _ => None,
         }
+    }
+
+    pub fn is_class(&self) -> bool {
+        matches!(self, Self::Class(_))
+    }
+
+    pub fn is_method(&self) -> bool {
+        matches!(self, Self::Method(_))
+    }
+
+    pub fn is_method_handle(&self) -> bool {
+        matches!(self, Self::MethodHandle(_, _))
+    }
+
+    pub fn is_method_type(&self) -> bool {
+        matches!(self, Self::MethodType(_))
     }
 }
 

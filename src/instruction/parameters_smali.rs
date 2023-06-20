@@ -20,8 +20,32 @@ impl CommandParameter {
                 let (input, registers) = Registers::read(input)?;
                 (input, Self::Registers(registers))
             }
-            ParameterKind::Literal => {
-                let (input, literal) = Literal::read(input)?;
+            ParameterKind::Int
+            | ParameterKind::Long
+            | ParameterKind::String
+            | ParameterKind::Class
+            | ParameterKind::MethodHandle
+            | ParameterKind::MethodType => {
+                let start = input;
+                let (input, mut literal) = Literal::read(input)?;
+                if kind == &ParameterKind::Int {
+                    let value = literal
+                        .get_integer()
+                        .and_then(|i| i32::try_from(i).ok())
+                        .ok_or_else(|| start.unexpected("an integer literal".into()))?;
+                    literal = Literal::Int(value);
+                } else if kind == &ParameterKind::Long {
+                    let value = literal
+                        .get_integer()
+                        .ok_or_else(|| start.unexpected("a long literal".into()))?;
+                    literal = Literal::Long(value);
+                } else if kind == &ParameterKind::Class && !literal.is_class() {
+                    return Err(start.unexpected("a class".into()));
+                } else if kind == &ParameterKind::MethodHandle && !literal.is_method_handle() {
+                    return Err(start.unexpected("a method handle".into()));
+                } else if kind == &ParameterKind::MethodType && !literal.is_method_type() {
+                    return Err(start.unexpected("a method type".into()));
+                }
                 (input, Self::Literal(literal))
             }
             ParameterKind::Label => {

@@ -1,7 +1,7 @@
 use super::{Annotation, AnnotationParameter, AnnotationParameterValue, AnnotationVisibility};
 use crate::error::ParseError;
 use crate::literal::Literal;
-use crate::r#type::{MethodSignature, Type};
+use crate::r#type::Type;
 use crate::tokenizer::Tokenizer;
 
 impl AnnotationParameterValue {
@@ -101,7 +101,7 @@ impl Annotation {
 mod tests {
     use super::*;
     use crate::error::ParseErrorDisplayed;
-    use crate::r#type::CallSignature;
+    use crate::r#type::{CallSignature, MethodSignature};
 
     fn tokenizer(data: &str) -> Tokenizer {
         Tokenizer::new(data.to_string(), std::path::Path::new("dummy"))
