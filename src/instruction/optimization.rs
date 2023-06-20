@@ -210,6 +210,7 @@ mod tests {
             const-method-handle v0, invoke-static@Ljava/lang/Integer;->toString(I)Ljava/lang/String;
             const-method-type v0, (II)I
             invoke-polymorphic {p1, v0, v1}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
+            invoke-custom/range {p0 .. p1}, backwardsLinkedCallSite("doSomething", (LCustom;Ljava/lang/String;)Ljava/lang/String;, "just testing")@LBootstrapLinker;->backwardsLink(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
         "#.trim());
 
         let expected = [
@@ -244,6 +245,7 @@ mod tests {
                 return_type: Type::Int,
             }))),
             Some(ResultType::Type(Type::Void)),
+            Some(ResultType::Type(Type::Object("java.lang.Object".to_string()))),
         ];
 
         for expected_result_type in expected {
