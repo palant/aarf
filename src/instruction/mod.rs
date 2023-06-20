@@ -44,6 +44,7 @@ pub enum ResultTypeDef {
     Object(&'static str),
     From(usize),
     ElementFrom(usize),
+    ReturnOf(usize),
     Exception,
 }
 
@@ -309,8 +310,8 @@ const DEFS: phf::Map<&str, InstructionDef> = instructions!(
     "shl-int/lit8" => [Result Register Int] "{1} << {2}" result_type=ResultTypeDef::From(1),
     "shr-int/lit8" => [Result Register Int] "{1} >> {2}" result_type=ResultTypeDef::From(1),
     "ushr-int/lit8" => [Result Register Int] "{1} >>> {2}" result_type=ResultTypeDef::From(1),
-    "invoke-polymorphic" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
-    "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::From(2),
+    "invoke-polymorphic" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::ReturnOf(3),
+    "invoke-polymorphic/range" => [DefaultEmptyResult Registers Method MethodType] "invoke-polymorphic {1.this}.<{2}>({1.args}), <{3}>" result_type=ResultTypeDef::ReturnOf(3),
     "invoke-custom" => [DefaultEmptyResult Registers CallSite] "invoke-custom {1.this}.<{2}>({1.args})" result_type=ResultTypeDef::From(2),
     "invoke-custom/range" => [DefaultEmptyResult Registers CallSite] "invoke-custom {1.this}.<{2}>({1.args})" result_type=ResultTypeDef::From(2),
     "const-method-handle" => [Result MethodHandle] "{1}" result_type=ResultTypeDef::From(1),

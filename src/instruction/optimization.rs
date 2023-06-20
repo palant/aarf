@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use super::{
     CommandData, CommandParameter, Instruction, Register, ResultType, ResultTypeDef, DEFS,
 };
-use crate::r#type::Type;
+use crate::literal::Literal;
+use crate::r#type::{MethodSignature, Type};
 
 impl Instruction {
     pub fn get_moved_result(&self) -> Option<Register> {
@@ -138,6 +139,20 @@ impl Instruction {
                         }
                     }
                 }
+                ResultTypeDef::ReturnOf(index) => {
+                    match Self::parameter_type(&parameters[*index], state) {
+                        None => None,
+                        Some(ResultType::Literal(Literal::Method(MethodSignature {call_signature, ..})))
+                        | Some(ResultType::Literal(Literal::MethodHandle(_, MethodSignature {call_signature, ..})))
+                        | Some(ResultType::Literal(Literal::MethodType(call_signature))) => {
+                            Some((&call_signature.return_type).into())
+                        }
+                        other => {
+                            eprintln!("Warning: Trying to deduce return type from a non-call parameter {other:?}");
+                            None
+                        }
+                    }
+                }
                 ResultTypeDef::Exception => {
                     Some(Type::Object("java.lang.exception".to_string()).into())
                 }
@@ -194,6 +209,7 @@ mod tests {
             invoke-direct {v16, v17}, Ls1/b$a;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)Ljava/lang/String;
             const-method-handle v0, invoke-static@Ljava/lang/Integer;->toString(I)Ljava/lang/String;
             const-method-type v0, (II)I
+            invoke-polymorphic {p1, v0, v1}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
         "#.trim());
 
         let expected = [
@@ -227,6 +243,7 @@ mod tests {
                 parameter_types: vec![Type::Int, Type::Int],
                 return_type: Type::Int,
             }))),
+            Some(ResultType::Type(Type::Void)),
         ];
 
         for expected_result_type in expected {
