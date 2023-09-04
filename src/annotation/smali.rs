@@ -178,7 +178,7 @@ mod tests {
                             },
                             AnnotationParameter {
                                 name: "charValue".to_string(),
-                                value: AnnotationParameterValue::Literal(Literal::Char('2')),
+                                value: AnnotationParameterValue::Literal(Literal::Char('2' as u16)),
                             },
                             AnnotationParameter {
                                 name: "shortValue".to_string(),

@@ -9,7 +9,7 @@ use crate::tokenizer::Tokenizer;
 pub enum Literal {
     Null,
     Bool(bool),
-    Char(char),
+    Char(u16),
     Byte(i8),
     Short(i16),
     Int(i32),
@@ -60,18 +60,17 @@ impl Literal {
             let start = &input;
             let (input, value) = read_escaped(&input, '\'')?;
             let value = value.chars().collect::<Vec<_>>();
-            if value.len() == 1 {
-                (input, Self::Char(value[0]))
+            let char = if value.len() == 1 {
+                value[0] as u32
             } else if value.len() == 2 && value[0] == '\\' {
-                (input, Self::Char(value[1]))
+                value[1] as u32
             } else if value.len() > 2 && value[0] == '\\' && value[1] == 'u' {
-                let c = u32::from_str_radix(&value[2..].iter().collect::<String>(), 16)
-                    .map_err(|_| start.unexpected("a literal".into()))?;
-                let c = char::from_u32(c).ok_or_else(|| start.unexpected("a literal".into()))?;
-                (input, Self::Char(c))
+                u32::from_str_radix(&value[2..].iter().collect::<String>(), 16)
+                    .map_err(|_| start.unexpected("a character literal".into()))?
             } else {
-                return Err(start.unexpected("a literal".into()));
-            }
+                return Err(start.unexpected("a character literal".into()));
+            };
+            (input, Self::Char(char.try_into().map_err(|_| start.unexpected("a character literal".into()))?))
         } else if input.expect_char('(').is_ok() {
             let (input, call) = CallSignature::read(input)?;
             (input, Self::MethodType(call))
@@ -162,7 +161,7 @@ impl Literal {
         matches!(self, Self::Char(_))
     }
 
-    pub fn get_char(&self) -> Option<char> {
+    pub fn get_char(&self) -> Option<u16> {
         match *self {
             Self::Char(value) => Some(value),
             _ => None,
@@ -238,12 +237,12 @@ impl Display for Literal {
                 }
             }
             Self::Char(value) => {
-                if *value < ' ' || *value >= '\u{007f}' {
-                    write!(f, "'\\u{:04x}'", *value as u32)
-                } else if *value == '\\' || *value == '\'' {
-                    write!(f, "'\\{value}'")
+                if *value < 0x20 || *value >= 0x7f {
+                    write!(f, "'\\u{:04x}'", *value)
+                } else if *value == '\\' as u16 || *value == '\'' as u16 {
+                    write!(f, "'\\{}'", *value as u8 as char)
                 } else {
-                    write!(f, "'{value}'")
+                    write!(f, "'{}'", *value as u8 as char)
                 }
             }
             Self::Byte(value) => {
@@ -335,24 +334,27 @@ mod tests {
 
     #[test]
     fn read_char() -> Result<(), ParseErrorDisplayed> {
-        let input = tokenizer(r#"'c' 'cc' '\c' '\'' '\\' '\u007f' '\' "#);
+        let input = tokenizer(r#"'c' 'cc' '\c' '\'' '\\' '\u007f' '\udbff' '\' "#);
         let (input, literal) = Literal::read(&input)?;
-        assert_eq!(literal, Literal::Char('c'));
+        assert_eq!(literal, Literal::Char('c' as u16));
 
         assert!(Literal::read(&input).is_err());
         let (input, _) = input.read_keyword()?;
 
         let (input, literal) = Literal::read(&input)?;
-        assert_eq!(literal, Literal::Char('c'));
+        assert_eq!(literal, Literal::Char('c' as u16));
 
         let (input, literal) = Literal::read(&input)?;
-        assert_eq!(literal, Literal::Char('\''));
+        assert_eq!(literal, Literal::Char('\'' as u16));
 
         let (input, literal) = Literal::read(&input)?;
-        assert_eq!(literal, Literal::Char('\\'));
+        assert_eq!(literal, Literal::Char('\\' as u16));
 
         let (input, literal) = Literal::read(&input)?;
-        assert_eq!(literal, Literal::Char('\u{007f}'));
+        assert_eq!(literal, Literal::Char(0x7f));
+
+        let (input, literal) = Literal::read(&input)?;
+        assert_eq!(literal, Literal::Char(0xdbff));
 
         assert!(Literal::read(&input).is_err());
 
@@ -415,12 +417,12 @@ mod tests {
         assert_eq!(format!("{}", Literal::Bool(false)), "false");
         assert_eq!(format!("{}", Literal::Bool(true)), "true");
 
-        assert_eq!(format!("{}", Literal::Char('x')), "'x'");
-        assert_eq!(format!("{}", Literal::Char('\\')), "'\\\\'");
-        assert_eq!(format!("{}", Literal::Char('\'')), "'\\\''");
-        assert_eq!(format!("{}", Literal::Char('\u{0000}')), "'\\u0000'");
-        assert_eq!(format!("{}", Literal::Char('\u{007f}')), "'\\u007f'");
-        assert_eq!(format!("{}", Literal::Char('\u{1234}')), "'\\u1234'");
+        assert_eq!(format!("{}", Literal::Char('x' as u16)), "'x'");
+        assert_eq!(format!("{}", Literal::Char('\\' as u16)), "'\\\\'");
+        assert_eq!(format!("{}", Literal::Char('\'' as u16)), "'\\\''");
+        assert_eq!(format!("{}", Literal::Char(0)), "'\\u0000'");
+        assert_eq!(format!("{}", Literal::Char(0x7f)), "'\\u007f'");
+        assert_eq!(format!("{}", Literal::Char(0x1234)), "'\\u1234'");
 
         assert_eq!(format!("{}", Literal::Byte(0)), "0x0");
         assert_eq!(format!("{}", Literal::Byte(0x7f)), "0x7f");
