@@ -49,7 +49,8 @@ impl Method {
                 let mut index;
                 (input, index) = input.read_number()?;
                 if !visibility.contains(&AccessFlag::Static) {
-                    index -= return_type.register_count() as i64;
+                    // this pointer is an implicit parameter
+                    index -= 1;
                 }
 
                 let mut param_index = 0;
@@ -59,6 +60,7 @@ impl Method {
                 }
 
                 if index < 0 || param_index >= parameters.len() {
+                    eprintln!("{index} {param_index} {:?}", parameters);
                     return Err(start.unexpected("a valid parameter number".into()));
                 }
 
