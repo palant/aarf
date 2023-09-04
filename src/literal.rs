@@ -89,6 +89,8 @@ impl Literal {
                 let input = input.expect_char('@')?;
                 let (input, method) = MethodSignature::read(&input)?;
                 (input, Self::MethodHandle(keyword, method))
+            } else if let Ok((input, method)) = MethodSignature::read(start) {
+                (input, Self::Method(method))
             } else if let Some(value) = keyword.strip_suffix('t') {
                 let number = parse_integer!(value, i8)
                     .map_err(|_| start.unexpected("a byte literal".into()))?;
@@ -122,8 +124,6 @@ impl Literal {
                 }
             } else if let Ok(number) = parse_integer!(keyword, i32) {
                 (input, Self::Int(number))
-            } else if let Ok((input, method)) = MethodSignature::read(start) {
-                (input, Self::Method(method))
             } else if let Ok((input, class)) = Type::read(start) {
                 (input, Self::Class(class))
             } else {

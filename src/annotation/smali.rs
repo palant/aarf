@@ -126,7 +126,7 @@ mod tests {
                                                 .end subannotation
                             typeValue = L10;
                             methodValue = L10;->11()V
-                            methodValue2 = Lj2/b;-><init>(Ljava/lang/String;II)V
+                            methodValue2 = Lj2/b;->connect(Ljava/lang/String;II)V
                             methodHandle = invoke-static@Lj2/b;-><init>(Ljava/lang/String;II)V
                             methodType = (Ljava/lang/String;II)V
                             enumValue = .enum LEnum;->12:LEnum;
@@ -243,7 +243,7 @@ mod tests {
                                 value: AnnotationParameterValue::Literal(Literal::Method(
                                     MethodSignature {
                                         object_type: Type::Object("j2.b".to_string()),
-                                        method_name: "<init>".to_string(),
+                                        method_name: "connect".to_string(),
                                         call_signature: CallSignature {
                                             parameter_types: vec![
                                                 Type::Object("java.lang.String".to_string()),
