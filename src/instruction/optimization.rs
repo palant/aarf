@@ -142,8 +142,14 @@ impl Instruction {
                 ResultTypeDef::ReturnOf(index) => {
                     match Self::parameter_type(&parameters[*index], state) {
                         None => None,
-                        Some(ResultType::Literal(Literal::Method(MethodSignature {call_signature, ..})))
-                        | Some(ResultType::Literal(Literal::MethodHandle(_, MethodSignature {call_signature, ..})))
+                        Some(ResultType::Literal(Literal::Method(MethodSignature {
+                            call_signature,
+                            ..
+                        })))
+                        | Some(ResultType::Literal(Literal::MethodHandle(
+                            _,
+                            MethodSignature { call_signature, .. },
+                        )))
                         | Some(ResultType::Literal(Literal::MethodType(call_signature))) => {
                             Some((&call_signature.return_type).into())
                         }
@@ -245,7 +251,9 @@ mod tests {
                 return_type: Type::Int,
             }))),
             Some(ResultType::Type(Type::Void)),
-            Some(ResultType::Type(Type::Object("java.lang.Object".to_string()))),
+            Some(ResultType::Type(Type::Object(
+                "java.lang.Object".to_string(),
+            ))),
         ];
 
         for expected_result_type in expected {

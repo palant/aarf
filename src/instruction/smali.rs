@@ -200,6 +200,7 @@ mod tests {
                 .line 12
                 nop
                 :label
+                const-class v0, [S
                 invoke-polymorphic {p1, v0, v1}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
                 invoke-polymorphic/range {v0 .. v2}, Ljava/lang/invoke/MethodHandle;->invoke([Ljava/lang/Object;)Ljava/lang/Object;, (II)V
                 invoke-custom {v0, v1}, normallyLinkedCallSite("doSomething", (LCustom;Ljava/lang/String;)Ljava/lang/String;, "just testing")@LBootstrapLinker;->normalLink(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
@@ -225,6 +226,18 @@ mod tests {
 
         let (input, instruction) = Instruction::read(&input)?;
         assert_eq!(instruction, Instruction::Label("label".to_string()),);
+
+        let (input, instruction) = Instruction::read(&input)?;
+        assert_eq!(
+            instruction,
+            Instruction::Command {
+                command: "const-class".to_string(),
+                parameters: vec![
+                    CommandParameter::Result(Register::Local(0)),
+                    CommandParameter::Literal(Literal::Class(Type::Array(Box::new(Type::Short))))
+                ],
+            }
+        );
 
         let (input, instruction) = Instruction::read(&input)?;
         assert_eq!(

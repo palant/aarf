@@ -89,41 +89,52 @@ impl Literal {
                 let input = input.expect_char('@')?;
                 let (input, method) = MethodSignature::read(&input)?;
                 (input, Self::MethodHandle(keyword, method))
-            } else if let Ok((input, method)) = MethodSignature::read(start) {
-                (input, Self::Method(method))
-            } else if let Some(value) = keyword.strip_suffix('t') {
-                let number = parse_integer!(value, i8)
-                    .map_err(|_| start.unexpected("a byte literal".into()))?;
-                (input, Self::Byte(number))
-            } else if let Some(value) = keyword.strip_suffix('s') {
-                let number = parse_integer!(value, i16)
-                    .map_err(|_| start.unexpected("a short literal".into()))?;
-                (input, Self::Short(number))
-            } else if let Some(value) = keyword.strip_suffix('l') {
-                let number = parse_integer!(value, i64)
-                    .map_err(|_| start.unexpected("a long literal".into()))?;
-                (input, Self::Long(number))
-            } else if keyword.find('.').is_some()
+            } else if keyword
+                .chars()
+                .next()
+                .filter(|c| c.is_numeric() || *c == '-' || *c == '.')
+                .is_some()
                 || keyword.starts_with("infinity")
-                || keyword.starts_with("-infinity")
                 || keyword.starts_with("nan")
             {
-                if let Some(value) = keyword.strip_suffix('f') {
-                    let number = f32::from_str(value)
-                        .map_err(|_| start.unexpected("a float literal".into()))?;
-                    (input, Self::Float(number))
-                } else {
-                    let value = if let Some(v) = keyword.strip_suffix('d') {
-                        v
+                if let Some(value) = keyword.strip_suffix('t') {
+                    let number = parse_integer!(value, i8)
+                        .map_err(|_| start.unexpected("a byte literal".into()))?;
+                    (input, Self::Byte(number))
+                } else if let Some(value) = keyword.strip_suffix('s') {
+                    let number = parse_integer!(value, i16)
+                        .map_err(|_| start.unexpected("a short literal".into()))?;
+                    (input, Self::Short(number))
+                } else if let Some(value) = keyword.strip_suffix('l') {
+                    let number = parse_integer!(value, i64)
+                        .map_err(|_| start.unexpected("a long literal".into()))?;
+                    (input, Self::Long(number))
+                } else if keyword.find('.').is_some()
+                    || keyword.starts_with("infinity")
+                    || keyword.starts_with("-infinity")
+                    || keyword.starts_with("nan")
+                {
+                    if let Some(value) = keyword.strip_suffix('f') {
+                        let number = f32::from_str(value)
+                            .map_err(|_| start.unexpected("a float literal".into()))?;
+                        (input, Self::Float(number))
                     } else {
-                        &keyword
-                    };
-                    let number = f64::from_str(value)
-                        .map_err(|_| start.unexpected("a double literal".into()))?;
-                    (input, Self::Double(number))
+                        let value = if let Some(v) = keyword.strip_suffix('d') {
+                            v
+                        } else {
+                            &keyword
+                        };
+                        let number = f64::from_str(value)
+                            .map_err(|_| start.unexpected("a double literal".into()))?;
+                        (input, Self::Double(number))
+                    }
+                } else {
+                    let number = parse_integer!(keyword, i32)
+                        .map_err(|_| start.unexpected("an integer literal".into()))?;
+                    (input, Self::Int(number))
                 }
-            } else if let Ok(number) = parse_integer!(keyword, i32) {
-                (input, Self::Int(number))
+            } else if let Ok((input, method)) = MethodSignature::read(start) {
+                (input, Self::Method(method))
             } else if let Ok((input, class)) = Type::read(start) {
                 (input, Self::Class(class))
             } else {
